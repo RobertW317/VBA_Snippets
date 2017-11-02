@@ -1,0 +1,5994 @@
+
+
+SPAN {
+font-family: "Courier New";
+font-size: 10pt;
+color: #000000;
+background: #FFFFFF;
+}
+.L0S31 {
+font-style: italic;
+color: #808080;
+}
+.L0S32 {
+color: #3399FF;
+}
+.L0S33 {
+color: #4DA619;
+}
+.L0S52 {
+color: #0000FF;
+}
+.L0S55 {
+color: #800080;
+}
+.L0S70 {
+color: #808080;
+}
+
+*&---------------------------------------------------------------------*
+*& Report  Z_CATERPILLAR_ADHOC
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z_caterpillar_adhoc LINE-SIZE 665.
+
+INCLUDE:  z_common_routines.
+
+TABLES:  vbap.
+
+DATA:  BEGIN OF it_out OCCURS 1,                "results table
+             vbeln          LIKE vbak-vbeln,    "SO
+             auart          LIKE vbak-auart,    "Order type
+             vdatu          LIKE vbak-vdatu,    "Delivery date
+             vgtyp          LIKE vbap-vgtyp,    "prec doc catagory
+             vgref          LIKE vbap-vgref,    "prec doc crtd with ref
+             vgbel          LIKE vbap-vgbel,    "Prec/ref doc
+             vgpos          LIKE vbap-vgpos,    "Prec/Ref doc item
+             vbelv          LIKE vbap-vbelv,    "Orig Doc
+             posnv          LIKE vbap-posnv,    "orig item
+             ps_psp_pnr     LIKE vbap-ps_psp_pnr, "WBS
+             werks          LIKE vbap-werks,    "plant
+             source_so      LIKE vbap-vbeln,    "source so
+             source_so_item LIKE vbap-posnr,    "source so item
+             source_yr(4)   TYPE c,             "source so year
+             waerk          LIKE vbak-waerk,    "curr
+             kvgr1          LIKE vbak-kvgr1,    "Industry code
+             kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+             vkbur          LIKE vbak-vkbur,    "sales office code
+             vkbur_txt      LIKE tvkbt-bezei,   "sales office name
+             vkgrp          LIKE vbak-vkgrp,    "sales group code
+             vkgrp_txt      LIKE tvgrt-bezei,   "sales group
+             kvgr3          LIKE vbak-kvgr3,    "oip group
+             vkorg          LIKE vbak-vkorg,    "sales org
+             knumv          LIKE vbak-knumv,    "sales condition
+             skunnr         LIKE vbak-kunnr,    "Sold To No
+             sname1         LIKE kna1-name1,    "Sold to Customer
+             sort01         LIKE kna1-ort01,
+             sregio         LIKE kna1-regio,
+             sland1         LIKE kna1-land1,
+             ekunnr         LIKE vbak-kunnr,    "End User No
+             ename1         LIKE kna1-name1,    "End User Customer
+             eort01         LIKE kna1-ort01,
+             eregio         LIKE kna1-regio,
+             eland1         LIKE kna1-land1,
+             ekonzs         LIKE kna1-konzs,    "customer grtoup
+             or             LIKE pa0002-nachn,  "outside rep
+             or2            LIKE pa0002-nachn,  "outside rep 2
+             ae             LIKE pa0002-nachn,  "Application Eng
+             pm             LIKE pa0002-nachn,  "Project manager
+             se1            LIKE pa0002-nachn,  "Sales Emp 1
+             se2            LIKE pa0002-nachn,  "Sales Emp 2
+             se3            LIKE pa0002-nachn,  "Sales Emp 3
+             se4            LIKE pa0002-nachn,  "Sales Emp 4
+             se5            LIKE pa0002-nachn,  "Sales Emp 5
+             se6            LIKE pa0002-nachn,  "Sales Emp 6
+             se1_value(20)  TYPE c,
+             se2_value(20)  TYPE c,
+             se3_value(20)  TYPE c,
+             se4_value(20)  TYPE c,
+             se5_value(20)  TYPE c,
+             se6_value(20)  TYPE c,
+             posnr          LIKE vbap-posnr,    "so item
+             erdat          LIKE vbap-erdat,    "create date
+             erdat_orig     LIKE vbap-erdat,    "orinal create date
+             matnr          LIKE vbap-matnr,    "material
+             arktx          LIKE vbap-arktx,    "description
+             mvgr1          LIKE vbap-mvgr1,    "product
+             mvgr1_txt      LIKE tvm1t-bezei,   "product group txt
+             kwmeng         LIKE vbap-kwmeng,   "qty
+             netwr          LIKE vbap-netwr,    "net value
+             abgru          LIKE vbap-abgru,    "reject reason
+             abgru_txt      LIKE tvagt-bezei,
+             mvgr3          LIKE vbap-mvgr3,    "Interface
+             mvgr3_txt      LIKE tvm3t-bezei,   "Interface txt
+             mvgr5          LIKE vbap-mvgr5,    "OIP Overide
+             prodh          LIKE vbap-prodh,    "Prod Hierc
+             ph_txt_1       LIKE t179t-vtext,   "Prod Hierc txt 1
+             ph_txt_2       LIKE t179t-vtext,   "Prod Hierc txt 2
+             ph_txt_3       LIKE t179t-vtext,   "Prod Hierc txt 3
+             prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+             prodline_net(20)  TYPE c,        "PH, CI, etc
+             prodline_net2(20) TYPE c,        "Controls
+             week_no(4)      TYPE c,            "week number
+             week            TYPE i,            "week number
+             division(20)    TYPE c,            "Division
+             so_item(17)     TYPE c,            "So Item
+             bstnk           LIKE  vbak-bstnk,  "po numbers
+             dismm          TYPE marc-dismm,   "mrp type
+             plifz          TYPE marc-plifz,   "planned dlv time
+             minbe          TYPE marc-minbe,   "reorder point
+             mabst          TYPE marc-mabst,   "max stock level
+             END OF it_out.
+
+
+DATA:  it_out_se LIKE it_out OCCURS 0 WITH HEADER LINE,
+       it_t005u  like t005u OCCURS 0 WITH HEADER LINE,
+       it_t005t  like t005t OCCURS 0 WITH HEADER LINE.
+
+
+DATA:  BEGIN OF it_fnames OCCURS 1,                "results table
+             file_name LIKE rlgrap-filename,
+       END OF it_fnames.
+
+DATA:  str_mssg TYPE string,
+       file_name LIKE rlgrap-filename.
+
+
+SELECT-OPTIONS: f_names FOR vbap-arktx.  "FOR rlgrap-filename.
+
+
+INITIALIZATION.
+  %_f_names_%_app_%-text = 'FILE NAMES'.
+
+  IF  sy-sysid = 'DV2'.
+
+    MOVE: 'I'     TO f_names-sign,
+          'EQ'    TO f_names-option,
+          'PRD_2011_0010.txt'  TO f_names-low.
+    APPEND f_names.
+    MOVE: 'PRD_2012_0010.txt'  TO f_names-low.
+    APPEND f_names.
+    MOVE: 'PRD_2013_0010.txt'  TO f_names-low.
+    APPEND f_names.
+  ENDIF.
+
+
+START-OF-SELECTION.
+
+  "PERFORM create_parts_sales_by_plant.
+  "PERFORM mars_report.
+  "PERFORM conveyor_report.
+  "PERFORM zmto_20milNo_report.
+  "PERFORM zor_usingEngMaterial.
+  "PERFORM mondelez_kraft_report.
+
+  "perFORM poultry_report1.
+  "perFORM pack_sales_by_State.
+
+  "perFORM report_stuff_for_map.
+  "perform FritoReportForGL.        "every year end oct
+  "perform listAllModelUsedInZOR.
+  "perform listAllLinesSoldOnZmto.  "for experlogix review
+  "PERFORM mars_zmto_report.
+  "PERFORM find_so_w_text_in_mat_desc.
+  "PERFORM countZOR_Lines.
+  "PERFORM NestleReportAllAssets.
+  "PERFORM check_ceia_extract. "consider changing filter
+  "PERFORM orders_by_product.
+  perform orders_pck_cc.        "BrianB/GL   11/2017
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  mars_ZMTO_report
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM mars_zmto_report.
+  DATA: tbx LIKE sy-tabix,
+        it_out2 LIKE it_out OCCURS 0 WITH HEADER LINE.
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+  IF 4 = 4.
+    it_year-yr = '2014'.
+    APPEND it_year.
+    it_year-yr = '2013'.
+    APPEND it_year.
+    " it_year-yr = '2011'.
+    " append it_year.
+  ENDIF.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                   it_year-yr.
+    DELETE it_out WHERE ekonzs <> 'MARS'.
+    DELETE it_out WHERE auart = 'ZSER'.
+    DELETE it_out WHERE auart = 'L1'.
+    DELETE it_out WHERE auart = 'CR'.
+    DELETE it_out WHERE auart = 'L2'.
+    DELETE it_out WHERE auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      it_out2 = it_out.
+      APPEND it_out2.
+    ENDLOOP.
+
+  ENDLOOP.
+
+  it_out[] = it_out2[].
+
+  WRITE: /1 'vbeln',
+         12 'posnr',
+         20 'auart',
+         36 'ename1',
+         72 'eort01',
+        108 'ST',
+        113 'ct',
+        117 'matnr',
+        136 'arktx',
+        189 'qty',
+        207 'net',
+        219 'PlQty',
+        238 'Div'.
+
+
+
+  LOOP AT it_out.
+    WRITE: /1  it_out-vbeln,
+           12  it_out-posnr,
+           20  it_out-auart,
+           26  it_out-ename1,
+           72  it_out-eort01,
+          108  it_out-eregio,
+          113  it_out-eland1,
+          117  it_out-matnr,
+             it_out-arktx,
+             it_out-kwmeng,
+             it_out-netwr,
+             it_out-prodline_qty,
+             it_out-division.
+
+
+
+  ENDLOOP.
+
+ENDFORM.                    "mars_ZMTO_report
+
+
+*&---------------------------------------------------------------------*
+*&      Form  MARS_REPORT
+*&---------------------------------------------------------------------*
+*&  I need a report (sap > or
+*& crm) that shows number and dollar volume of Dacs, Ceia's, and xray
+*& sold to Mondelez per year for last three years.  I need it for
+*& US/Canada
+*& (combined) and LA/Mex with each product broken out separately.  I'm
+*& thinking SAP is most accurate way.  Can you call Mr Walsh to see if
+*& this is something he can help pull?
+*----------------------------------------------------------------------*
+FORM mondelez_kraft_report.
+  DATA: tbx LIKE sy-tabix,
+        it_out2 LIKE it_out OCCURS 0 WITH HEADER LINE.
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  it_year-yr = '2014'.
+  APPEND it_year.
+  IF 4 = 4.
+    it_year-yr = '2013'.
+    APPEND it_year.
+    it_year-yr = '2012'.
+    APPEND it_year.
+    it_year-yr = '2011'.
+    APPEND it_year.
+  ENDIF.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                   it_year-yr.
+    DELETE it_out WHERE ekonzs <> 'KRAFT'.
+    DELETE it_out WHERE auart = 'ZSER'.
+    DELETE it_out WHERE auart = 'L1'.
+    DELETE it_out WHERE auart = 'CR'.
+    DELETE it_out WHERE auart = 'L2'.
+    DELETE it_out WHERE auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      it_out2 = it_out.
+      APPEND it_out2.
+    ENDLOOP.
+
+  ENDLOOP.
+
+  it_out[] = it_out2[].
+
+  WRITE: /1 'vbeln',
+         12 'posnr',
+         20 'auart',
+         36 'ename1',
+         72 'eort01',
+        108 'ST',
+        113 'ct',
+        117 'matnr',
+        136 'arktx',
+        189 'qty',
+        207 'net',
+        219 'PlQty',
+        238 'Div'.
+
+
+
+  LOOP AT it_out.
+    WRITE: /1  it_out-vbeln,
+           12  it_out-posnr,
+           20  it_out-auart,
+           26  it_out-ename1,
+           72  it_out-eort01,
+          108  it_out-eregio,
+          113  it_out-eland1,
+          117  it_out-matnr,
+             it_out-arktx,
+             it_out-kwmeng,
+             it_out-netwr,
+             it_out-prodline_qty,
+             it_out-division.
+
+  ENDLOOP.
+
+ENDFORM.                    "mondelez_kraft_report
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  zor_usingEngMaterial
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM zor_usingengmaterial.
+  DATA: tbx LIKE sy-tabix,
+        it_out2  LIKE it_out OCCURS 0 WITH HEADER LINE.
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+
+
+  "it_fnames-file_name = 'PRD_2011_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2012_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2013_0010.txt'.
+  "append it_fnames.
+  "PERFORM get_data.
+
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+  it_year-yr = '2010'.
+  APPEND it_year.
+  "it_year-yr = '2009'.
+  "append it_year.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                   it_year-yr.
+    "delete it_out where prodline_net <> 'PH'.
+    ""delete it_out where auart = 'ZSER'.
+    ""delete it_out where auart = 'L1'.
+    ""delete it_out where auart = 'CR'.
+    ""delete it_out where auart = 'L2'.
+    ""delete it_out where auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE auart <> 'ZOR'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+    DELETE it_out WHERE netwr = 0.
+    "sort it_out by erdat.
+
+    LOOP AT it_out.
+      "   if it_out-arktx cs 'CONV'.
+      it_out2 = it_out.
+      APPEND it_out2.
+      "  endif.
+    ENDLOOP.
+  ENDLOOP.
+  it_out[] = it_out2[].
+
+  CLEAR it_out2.
+  REFRESH it_out2.
+  LOOP AT it_out.
+    "if it_out-matnr cs '2'.
+    "   continue.
+    "endif.
+    "if it_out-matnr cs '8'.
+    "   continue.
+    "endif.
+    IF it_out-matnr+0(6) = 'ACCESS'.
+      "   continue.
+    ENDIF.
+    IF it_out-matnr+0(7) = 'UPGRADE'.
+      "   continue.
+    ENDIF.
+    IF it_out-matnr+0(1) = 'X'.
+      "   continue.
+    ENDIF.
+
+    it_out2 = it_out.
+    APPEND it_out2.
+  ENDLOOP.
+  it_out[] = it_out2[].
+
+
+
+  SORT it_out BY matnr arktx prodline_net prodline_qty division.
+  DELETE ADJACENT DUPLICATES FROM it_out
+                  COMPARING matnr arktx prodline_net
+                            prodline_qty division.
+
+  LOOP AT it_out.
+    WRITE: / it_out-so_item,
+             it_out-matnr,
+             it_out-arktx,
+             it_out-netwr,
+             it_out-kvgr3,          "oip code
+             it_out-kvgr1_txt,      "industry
+             it_out-mvgr5,          "oip overide
+             it_out-division,
+             it_out-ph_txt_1,   "Prod Hierc txt 1
+             it_out-ph_txt_2,   "Prod Hierc txt 2
+             it_out-ph_txt_3,
+             it_out-prodline_net,
+             it_out-prodline_qty,
+             it_out-pm.
+
+  ENDLOOP.
+
+
+
+ENDFORM.                    "zor_usingEngMaterial
+
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  zmto_20milNo_report
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM zmto_20milno_report.
+  DATA: tbx LIKE sy-tabix,
+        it_out2  LIKE it_out OCCURS 0 WITH HEADER LINE.
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+
+
+  "it_fnames-file_name = 'PRD_2011_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2012_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2013_0010.txt'.
+  "append it_fnames.
+  "PERFORM get_data.
+
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  "it_year-yr = '2011'.
+  "append it_year.
+  "it_year-yr = '2010'.
+  "append it_year.
+  "it_year-yr = '2009'.
+  "append it_year.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                   it_year-yr.
+    "delete it_out where prodline_net <> 'PH'.
+    ""delete it_out where auart = 'ZSER'.
+    ""delete it_out where auart = 'L1'.
+    ""delete it_out where auart = 'CR'.
+    ""delete it_out where auart = 'L2'.
+    ""delete it_out where auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE auart <> 'ZMTO'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+    DELETE it_out WHERE netwr = 0.
+    "sort it_out by erdat.
+
+    LOOP AT it_out.
+      "   if it_out-arktx cs 'CONV'.
+      it_out2 = it_out.
+      APPEND it_out2.
+      "  endif.
+    ENDLOOP.
+  ENDLOOP.
+  it_out[] = it_out2[].
+
+  CLEAR it_out2.
+  REFRESH it_out2.
+  LOOP AT it_out.
+    "if it_out-matnr cs '2'.
+    "   continue.
+    "endif.
+    "if it_out-matnr cs '8'.
+    "   continue.
+    "endif.
+    IF it_out-matnr+0(6) = 'ACCESS'.
+      "   continue.
+    ENDIF.
+    IF it_out-matnr+0(7) = 'UPGRADE'.
+      "   continue.
+    ENDIF.
+    IF it_out-matnr+0(1) = 'X'.
+      "   continue.
+    ENDIF.
+
+    it_out2 = it_out.
+    APPEND it_out2.
+  ENDLOOP.
+  it_out[] = it_out2[].
+
+
+
+  SORT it_out BY matnr arktx prodline_net prodline_qty division.
+  DELETE ADJACENT DUPLICATES FROM it_out
+                  COMPARING matnr arktx prodline_net
+                            prodline_qty division.
+
+  LOOP AT it_out.
+    WRITE: / it_out-so_item,
+             it_out-matnr,
+             it_out-arktx,
+             it_out-netwr,
+             it_out-kvgr3,          "oip code
+             it_out-kvgr1_txt,      "industry
+             it_out-mvgr5,          "oip overide
+             it_out-division,
+             it_out-ph_txt_1,   "Prod Hierc txt 1
+             it_out-ph_txt_2,   "Prod Hierc txt 2
+             it_out-ph_txt_3,
+             it_out-prodline_net,
+             it_out-prodline_qty,
+             it_out-prodline_net,
+             it_out-so_item,
+             it_out-division.
+
+
+  ENDLOOP.
+
+
+
+ENDFORM.                    "zmto_20milNo_report
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  conveyor_report
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM conveyor_report.
+  DATA: tbx LIKE sy-tabix,
+        it_out2  LIKE it_out OCCURS 0 WITH HEADER LINE.
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+
+
+  "it_fnames-file_name = 'PRD_2011_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2012_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2013_0010.txt'.
+  "append it_fnames.
+  "PERFORM get_data.
+
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+  it_year-yr = '2010'.
+  APPEND it_year.
+  it_year-yr = '2009'.
+  APPEND it_year.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                   it_year-yr.
+    "delete it_out where prodline_net <> 'PH'.
+    ""delete it_out where auart = 'ZSER'.
+    ""delete it_out where auart = 'L1'.
+    ""delete it_out where auart = 'CR'.
+    ""delete it_out where auart = 'L2'.
+    ""delete it_out where auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE auart <> 'ZMTO'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+    DELETE it_out WHERE netwr = 0.
+    "sort it_out by erdat.
+
+    LOOP AT it_out.
+      IF it_out-arktx CS 'CONV'.
+        it_out2 = it_out.
+        APPEND it_out2.
+      ENDIF.
+    ENDLOOP.
+  ENDLOOP.
+  it_out[] = it_out2[].
+
+  CLEAR it_out2.
+  REFRESH it_out2.
+  LOOP AT it_out.
+    "if it_out-matnr cs '2'.
+    "   continue.
+    "endif.
+    "if it_out-matnr cs '8'.
+    "   continue.
+    "endif.
+    IF it_out-matnr+0(6) = 'ACCESS'.
+      CONTINUE.
+    ENDIF.
+    IF it_out-matnr+0(7) = 'UPGRADE'.
+      CONTINUE.
+    ENDIF.
+    IF it_out-matnr+0(1) = 'X'.
+      CONTINUE.
+    ENDIF.
+
+    it_out2 = it_out.
+    APPEND it_out2.
+  ENDLOOP.
+  it_out[] = it_out2[].
+
+
+
+  SORT it_out BY matnr arktx prodline_net prodline_qty division.
+  DELETE ADJACENT DUPLICATES FROM it_out
+                  COMPARING matnr arktx prodline_net
+                            prodline_qty division.
+
+  LOOP AT it_out.
+    WRITE: / it_out-so_item,
+             it_out-matnr,
+             it_out-arktx,
+             it_out-kvgr3,          "oip code
+             it_out-kvgr1_txt,      "industry
+             it_out-mvgr5,          "oip overide
+             it_out-division,
+             it_out-prodline_net,
+             it_out-prodline_qty,
+             it_out-ename1,
+             it_out-eort01.
+
+  ENDLOOP.
+
+
+
+ENDFORM.                    "MARS_REPORT
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  MARS_REPORT
+*&---------------------------------------------------------------------*
+* Hi George – can we run a sales order listing for all Mars/Mars
+* company jobs (by year) for 2013, 2012, and 2011?  What they want
+* to see is the following:
+*   Mars PO Number
+*   H&C Sales Order Create Date
+*   H&C Sales Order Number
+*   H&C Quote Number
+*   Total Order Value
+*   Ship to Account
+*   Ship to City/State
+*   H&C Shipment Date
+*   YEAR
+*----------------------------------------------------------------------*
+FORM mars_report.
+  DATA tbx LIKE sy-tabix.
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         bstnk       LIKE vbak-bstnk,    "purchase order no
+         erdat       LIKE vbak-erdat,    "create date
+         vbeln       LIKE vbak-vbeln,    "So number
+         vgbel       LIKE vbap-vgbel,    "prec doc / quote
+         netwr       LIKE vbap-netwr,    "value
+         ename1      LIKE kna1-name1,    "End user name
+         ekunnr      LIKE vbak-kunnr,    "End user no
+         eort01      LIKE kna1-ort01,    "end user city
+         eregio      LIKE kna1-regio,    "end user region state
+         vdatu       LIKE vbak-vdatu,    "req dlv date
+         auart       LIKE vbak-auart,    "Sales order type
+         year(4)     TYPE c,
+         END OF it_list.
+
+  "it_fnames-file_name = 'PRD_2011_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2012_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2013_0010.txt'.
+  "append it_fnames.
+  "PERFORM get_data.
+
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                   it_year-yr.
+    DELETE it_out WHERE ekonzs <> 'MARS'.
+    ""delete it_out where auart = 'ZSER'.
+    ""delete it_out where auart = 'L1'.
+    ""delete it_out where auart = 'CR'.
+    ""delete it_out where auart = 'L2'.
+    ""delete it_out where auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      "if it_out-vbeln = '2013021174'.
+      "   it_out-vbeln = it_out-vbeln.
+      "endif.
+
+      it_list-bstnk   = it_out-bstnk.    "purchase order no
+      "it_list-erdat   = it_out-erdat.           "create date
+      it_list-vbeln    = it_out-vbeln.        "So number
+      it_list-auart    = it_out-auart.        "So number
+      "it_list-vgbel    = it_out-vgbel.    "prec doc / quote
+      it_list-netwr    = it_out-netwr.     "value
+      "it_list-ekunnr   = it_out-kunnr.    "End user no
+      "it_list-eort01   = it_out-ort01.    "end user city
+      "it_list-eregio   = it_out-regio.    "end user region state
+      "it_list-year     = it_out-erdat+0(4).
+      COLLECT it_list INTO it_list.
+    ENDLOOP.
+    DELETE it_list WHERE netwr = 0.
+
+    SORT it_out BY erdat.
+
+    LOOP AT it_list.
+      tbx = sy-tabix.
+      READ TABLE it_out WITH KEY vbeln = it_list-vbeln.
+      IF sy-subrc = 0.
+        it_list-erdat    = it_out-erdat.           "create date
+        "it_list-netwr    = it_out-netwr.     "value
+        it_list-ekunnr   = it_out-ekunnr.    "End user no
+        it_list-ename1   = it_out-ename1.    "End user name
+        it_list-eort01   = it_out-eort01.    "end user city
+        it_list-eregio   = it_out-eregio.    "end user region state
+        it_list-vdatu    = it_out-vdatu.     "req dlv date
+        it_list-year     = it_out-erdat+0(4).
+        MODIFY it_list INDEX tbx.
+      ENDIF.
+    ENDLOOP.
+
+    LOOP AT it_list.
+      tbx = sy-tabix.
+      LOOP AT it_out WHERE vbeln = it_list-vbeln.
+        IF it_out-vgbel+2(1) = '3'.
+          it_list-vgbel    = it_out-vgbel.           "quote
+          MODIFY it_list INDEX tbx TRANSPORTING vgbel.
+          CONTINUE.
+        ENDIF.
+      ENDLOOP.
+
+    ENDLOOP.
+
+
+  ENDLOOP.
+
+
+
+  SORT it_list BY ekunnr vbeln.
+
+  WRITE: /1(20) 'Purchase Order',
+         22(10) 'CreateDt',
+         33(10) 'DlvDate',
+         44(10) 'SoNo',
+         55(10) 'Quote',
+         78(15) 'NetValue',
+         88(10) 'EuNo',
+         99(35) 'EuName',
+        135(35) 'EuCity',
+        171(3)  'Eur',
+        175(4)  'Year',
+        180(4)  'OrdTyp'.
+
+  LOOP AT it_list.
+    WRITE: / it_list-bstnk,    "purchase order no
+             it_list-erdat,    "create date
+             it_list-vdatu,    "create date
+             it_list-vbeln,    "So number
+             it_list-vgbel,    "prec doc / quote
+             it_list-netwr,    "value
+             it_list-ekunnr,    "End user no
+             it_list-ename1,    "End user name1
+             it_list-eort01,    "end user city
+             it_list-eregio,    "end user region state
+             it_list-year,
+             it_list-auart.
+  ENDLOOP.
+
+
+
+ENDFORM.                    "MARS_REPORT
+
+
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  load_fileNames
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM load_filenames.
+  LOOP AT f_names.
+    it_fnames-file_name = f_names-low.
+    APPEND it_fnames.
+  ENDLOOP.
+ENDFORM.                    "load_fileNames
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  get_data
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM get_data.
+  LOOP AT it_fnames.
+    CONCATENATE '\\NT-SERVER\Projectstock\Caterpillar\data\'
+                it_fnames-file_name
+                INTO file_name.
+
+    OPEN DATASET file_name FOR INPUT IN BINARY MODE.
+    IF sy-subrc = 0.
+      DO.
+        READ DATASET file_name INTO it_out.
+        IF sy-subrc <> 0.
+          EXIT.
+        ELSE.
+          APPEND it_out.
+        ENDIF.
+      ENDDO.
+      CLOSE DATASET file_name.
+    ELSE.
+      CONCATENATE 'Error: Open dataset for input: '
+                  file_name INTO str_mssg SEPARATED BY space.
+      MESSAGE str_mssg TYPE 'I'.
+    ENDIF.
+  ENDLOOP.
+
+ENDFORM.                    "get_data
+
+
+*&---------------------------------------------------------------------*
+*&      Form  get_data_from_file
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->SERVER     text
+*      -->YEAR       text
+*----------------------------------------------------------------------*
+FORM get_data_from_file USING server TYPE string
+                              year TYPE string.
+
+
+  DATA:  str TYPE string.
+  CONCATENATE server year INTO str SEPARATED BY space.
+  "'DV2_1999_0010.txt'
+  PERFORM showprogress USING str.
+
+  CONCATENATE '\\NT-SERVER\Projectstock\Caterpillar\data\'
+              server
+              '_'
+              year
+              '_0010.txt'
+              INTO file_name.
+
+  OPEN DATASET file_name FOR INPUT IN BINARY MODE.
+  IF sy-subrc = 0.
+    DO.
+      READ DATASET file_name INTO it_out.
+      IF sy-subrc <> 0.
+        EXIT.
+      ELSE.
+        APPEND it_out.
+      ENDIF.
+    ENDDO.
+    CLOSE DATASET file_name.
+  ELSE.
+    CONCATENATE 'Error: Open dataset for input: '
+                file_name INTO str_mssg SEPARATED BY space.
+    MESSAGE str_mssg TYPE 'I'.
+  ENDIF.
+
+
+ENDFORM.                    "get_data_from_file
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  create_parts_sales_by_plant
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM create_parts_sales_by_plant.
+  DATA tbx LIKE sy-tabix.
+
+  DATA:  BEGIN OF it_custplant OCCURS 1,
+         ename1      LIKE kna1-name1,
+         eort01      LIKE kna1-ort01,
+         qty_ccw     LIKE vbap-kwmeng,   "Qty Ishida Units
+         qty_vffs    LIKE vbap-kwmeng,   "Qty Ishida Units
+         qty_dacs    LIKE vbap-kwmeng,   "Qty Ishida Units
+         netwr       LIKE vbap-netwr,    "ishida Parts value
+         year(4)     TYPE c,
+         END OF it_custplant.
+
+  CLEAR it_out.
+  REFRESH it_out.
+  PERFORM get_data_from_file USING 'DV2' '1999'.
+  LOOP AT it_out.
+    CLEAR it_custplant.
+    it_custplant-ename1 = it_out-ename1.
+    it_custplant-eort01 = it_out-eort01.
+    CASE it_out-prodline_qty.
+      WHEN 'CCW'.
+        it_custplant-qty_ccw = it_out-kwmeng.
+      WHEN 'VFFS'.
+        it_custplant-qty_vffs = it_out-kwmeng.
+      WHEN 'DACS'.
+        it_custplant-qty_dacs = it_out-kwmeng.
+    ENDCASE.
+    IF it_out-division = 'PartsIshida'.
+      "   it_custplant-netwr  = it_out-netwr.
+    ENDIF.
+    it_custplant-year   = '1999'.
+    COLLECT it_custplant INTO it_custplant.
+  ENDLOOP.
+  SORT it_custplant BY netwr DESCENDING."
+
+
+  CLEAR it_out.
+  REFRESH it_out.
+  PERFORM get_data_from_file USING 'DV2' '2000'.
+  LOOP AT it_out.
+    CLEAR it_custplant.
+    it_custplant-ename1 = it_out-ename1.
+    it_custplant-eort01 = it_out-eort01.
+    CASE it_out-prodline_qty.
+      WHEN 'CCW'.
+        it_custplant-qty_ccw = it_out-kwmeng.
+      WHEN 'VFFS'.
+        it_custplant-qty_vffs = it_out-kwmeng.
+      WHEN 'DACS'.
+        it_custplant-qty_dacs = it_out-kwmeng.
+    ENDCASE.
+    IF it_out-division = 'PartsIshida'.
+      "   it_custplant-netwr  = it_out-netwr.
+    ENDIF.
+    it_custplant-year   = '1999'.
+    COLLECT it_custplant INTO it_custplant.
+  ENDLOOP.
+  SORT it_custplant BY netwr DESCENDING.
+
+  CLEAR it_out.
+  REFRESH it_out.
+  PERFORM get_data_from_file USING 'DV2' '2001'.
+  LOOP AT it_out.
+    CLEAR it_custplant.
+    it_custplant-ename1 = it_out-ename1.
+    it_custplant-eort01 = it_out-eort01.
+    CASE it_out-prodline_qty.
+      WHEN 'CCW'.
+        it_custplant-qty_ccw = it_out-kwmeng.
+      WHEN 'VFFS'.
+        it_custplant-qty_vffs = it_out-kwmeng.
+      WHEN 'DACS'.
+        it_custplant-qty_dacs = it_out-kwmeng.
+    ENDCASE.
+    IF it_out-division = 'PartsIshida'.
+      ""   it_custplant-netwr  = it_out-netwr.
+    ENDIF.
+    it_custplant-year   = '1999'.
+    COLLECT it_custplant INTO it_custplant.
+  ENDLOOP.
+  SORT it_custplant BY netwr DESCENDING.
+
+  CLEAR it_out.
+  REFRESH it_out.
+  PERFORM get_data_from_file USING 'DV2' '2002'.
+  LOOP AT it_out.
+    CLEAR it_custplant.
+    it_custplant-ename1 = it_out-ename1.
+    it_custplant-eort01 = it_out-eort01.
+    CASE it_out-prodline_qty.
+      WHEN 'CCW'.
+        it_custplant-qty_ccw = it_out-kwmeng.
+      WHEN 'VFFS'.
+        it_custplant-qty_vffs = it_out-kwmeng.
+      WHEN 'DACS'.
+        it_custplant-qty_dacs = it_out-kwmeng.
+    ENDCASE.
+    IF it_out-division = 'PartsIshida'.
+      ""  it_custplant-netwr  = it_out-netwr.
+    ENDIF.
+    it_custplant-year   = '1999'.
+    COLLECT it_custplant INTO it_custplant.
+  ENDLOOP.
+  SORT it_custplant BY netwr DESCENDING.
+
+
+  CLEAR it_out.
+  REFRESH it_out.
+  PERFORM get_data_from_file USING 'DV2' '2003'.
+  LOOP AT it_out.
+    CLEAR it_custplant.
+    it_custplant-ename1 = it_out-ename1.
+    it_custplant-eort01 = it_out-eort01.
+    CASE it_out-prodline_qty.
+      WHEN 'CCW'.
+        it_custplant-qty_ccw = it_out-kwmeng.
+      WHEN 'VFFS'.
+        it_custplant-qty_vffs = it_out-kwmeng.
+      WHEN 'DACS'.
+        it_custplant-qty_dacs = it_out-kwmeng.
+    ENDCASE.
+    IF it_out-division = 'PartsIshida'.
+      ""   it_custplant-netwr  = it_out-netwr.
+    ENDIF.
+    it_custplant-year   = '1999'.
+    COLLECT it_custplant INTO it_custplant.
+  ENDLOOP.
+  SORT it_custplant BY netwr DESCENDING.
+
+
+
+  CLEAR it_out.
+  REFRESH it_out.
+  PERFORM get_data_from_file USING 'DV2' '2004'.
+  LOOP AT it_out.
+    CLEAR it_custplant.
+    it_custplant-ename1 = it_out-ename1.
+    it_custplant-eort01 = it_out-eort01.
+    CASE it_out-prodline_qty.
+      WHEN 'CCW'.
+        it_custplant-qty_ccw = it_out-kwmeng.
+      WHEN 'VFFS'.
+        it_custplant-qty_vffs = it_out-kwmeng.
+      WHEN 'DACS'.
+        it_custplant-qty_dacs = it_out-kwmeng.
+    ENDCASE.
+    IF it_out-division = 'PartsIshida'.
+      it_custplant-netwr  = it_out-netwr.
+    ENDIF.
+    it_custplant-year   = '1999'.
+    COLLECT it_custplant INTO it_custplant.
+  ENDLOOP.
+  SORT it_custplant BY netwr DESCENDING.
+
+
+  LOOP AT it_custplant.
+
+    WRITE: / it_custplant-ename1,
+             it_custplant-eort01,
+             it_custplant-qty_ccw,
+             it_custplant-qty_vffs,
+             it_custplant-qty_dacs,
+             it_custplant-netwr,
+             it_custplant-year.
+
+
+  ENDLOOP.
+
+
+ENDFORM.                    "create_parts_sales_by_plant
+
+
+*&---------------------------------------------------------------------*
+*&      Form  mars_report2
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM mars_report2.
+  DATA tbx LIKE sy-tabix.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         bstnk       LIKE vbak-bstnk,    "purchase order no
+         erdat       LIKE vbak-erdat,    "create date
+         vbeln       LIKE vbak-vbeln,    "So number
+         vgbel       LIKE vbap-vgbel,    "prec doc / quote
+         netwr       LIKE vbap-netwr,    "value
+         ename1      LIKE kna1-name1,    "End user name
+         ekunnr      LIKE vbak-kunnr,    "End user no
+         eort01      LIKE kna1-ort01,    "end user city
+         eregio      LIKE kna1-regio,    "end user region state
+         vdatu       LIKE vbak-vdatu,    "req dlv date
+         ekonzs      LIKE kna1-konzs,    "customer group
+         year(4)     TYPE c,
+         END OF it_list.
+
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+  it_year-yr = '2010'.
+  APPEND it_year.
+  it_year-yr = '2009'.
+  APPEND it_year.
+
+  ""  it_fnames-file_name = 'PRD_2011_0010.txt'.
+  "" append it_fnames.
+  " it_fnames-file_name = 'PRD_2012_0010.txt'.
+  " append it_fnames.
+  "it_fnames-file_name = 'PRD_2013_0010.txt'.
+  "append it_fnames.
+  "PERFORM get_data.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+    "delete it_out where ekonzs <> 'MARS'.
+    DELETE it_out WHERE auart = 'ZSER'.
+    ""delete it_out where auart = 'L1'.
+    ""delete it_out where auart = 'CR'.
+    ""delete it_out where auart = 'L2'.
+    DELETE it_out WHERE auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+
+    LOOP AT it_out.
+      IF it_out-vbeln = '2013021174'.
+        it_out-vbeln = it_out-vbeln.
+      ENDIF.
+      IF it_out-vbeln = '2013018890'.
+        it_out-vbeln = it_out-vbeln.
+      ENDIF.
+
+      it_list-bstnk   = it_out-bstnk.    "purchase order no
+      "it_list-erdat   = it_out-erdat.           "create date
+      it_list-vbeln    = it_out-vbeln.        "So number
+      "it_list-vgbel    = it_out-vgbel.    "prec doc / quote
+      it_list-netwr    = it_out-netwr.     "value
+      "it_list-ekunnr   = it_out-kunnr.    "End user no
+      "it_list-eort01   = it_out-ort01.    "end user city
+      "it_list-eregio   = it_out-regio.    "end user region state
+      "it_list-year     = it_out-erdat+0(4).
+      COLLECT it_list INTO it_list.
+    ENDLOOP.
+    DELETE it_list WHERE netwr = 0.
+    DELETE it_list WHERE netwr < 30000.
+
+    SORT it_out BY erdat.
+
+    LOOP AT it_list.
+      tbx = sy-tabix.
+      READ TABLE it_out WITH KEY vbeln = it_list-vbeln.
+      IF sy-subrc = 0.
+        it_list-erdat    = it_out-erdat.           "create date
+        "it_list-netwr    = it_out-netwr.     "value
+        it_list-ekunnr   = it_out-ekunnr.    "End user no
+        it_list-ename1   = it_out-ename1.    "End user name
+        it_list-eort01   = it_out-eort01.    "end user city
+        it_list-eregio   = it_out-eregio.    "end user region state
+        it_list-vdatu    = it_out-vdatu.     "req dlv date
+        it_list-year     = it_out-erdat+0(4).
+        IF it_out-ekonzs IS NOT INITIAL.
+          it_list-ekonzs = it_out-ekonzs.
+        ELSE.
+          it_list-ekonzs = it_out-ename1.
+        ENDIF.
+        MODIFY it_list INDEX tbx.
+      ENDIF.
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY ekunnr vbeln.
+
+  WRITE: /1(20) 'Purchase Order',
+         22(10) 'CreateDt',
+         33(10) 'DlvDate',
+         44(10) 'SoNo',
+         55(10) 'Quote',
+         66(15) 'NetValue'.
+
+  LOOP AT it_list.
+    WRITE: / it_list-bstnk,    "purchase order no
+             it_list-erdat,    "create date
+             it_list-vdatu,    "create date
+             it_list-vbeln,    "So number
+             it_list-vgbel,    "prec doc / quote
+             it_list-netwr,    "value
+             it_list-ekunnr,    "End user no
+             it_list-ename1,    "End user name1
+             it_list-eort01,    "end user city
+             it_list-eregio,    "end user region state
+             it_list-year,
+             it_list-ekonzs.
+  ENDLOOP.
+
+
+
+ENDFORM.                    "MARS_REPORT
+
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  poultry_report1
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM poultry_report1.
+  DATA tbx LIKE sy-tabix.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         vbeln          LIKE vbak-vbeln,    "So number
+         erdat          LIKE vbak-erdat,
+         sname1         LIKE kna1-name1, "Sold to Customer
+         ename1         LIKE kna1-name1,    "End User Customer
+         eort01         LIKE kna1-ort01,
+         eregio         LIKE kna1-regio,
+         eland1         LIKE kna1-land1,
+         matnr          LIKE vbap-matnr,    "material
+         arktx          LIKE vbap-arktx,    "description
+         kwmeng         LIKE vbap-kwmeng,   "qty
+         netwr          LIKE vbap-netwr,    "net
+         total_net      LIKE vbap-netwr,
+         se1            LIKE pa0002-nachn,  "Sales Emp 1
+         se2            LIKE pa0002-nachn,  "Sales Emp 2
+         kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+         mvgr1_txt      LIKE tvm1t-bezei,   "material group txt
+         prodline_net(20)  TYPE c,          "PH, CI, etc
+         division(20)    TYPE c,            "Division
+         year(7)     TYPE c,
+         prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+         END OF it_list.
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+
+
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+    "delete it_out where ekonzs <> 'MARS'.
+    DELETE it_out WHERE auart = 'ZSER'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    DELETE it_out WHERE auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE ekonzs = 'FRITO'.
+    DELETE it_out WHERE division <> 'Packaging'.
+    DELETE it_out WHERE prodline_net = 'INSTALL'.
+    DELETE it_out WHERE prodline_net = 'CI'.
+    DELETE it_out WHERE ( sland1 <> 'US' AND sland1 <> 'CA' ).
+    DELETE it_out WHERE kvgr1_txt <> 'Meat/Poultry/Seafood'.
+
+    DELETE it_out WHERE ( mvgr1_txt <> 'Poultry - cooked' AND
+                          mvgr1_txt <> 'Poultry - frozen' AND
+                          mvgr1_txt <> 'Poultry - raw'    AND
+                          mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      CLEAR it_list.
+
+
+      MOVE-CORRESPONDING it_out TO it_list.  " from it_out.
+      it_list-netwr       = it_out-netwr / it_out-kwmeng.
+      it_list-total_net   = it_out-netwr .
+      CONCATENATE 'YR_' it_out-vbeln+0(4) INTO it_list-year.
+
+      IF it_out-prodline_net = space.   "is initial.
+        it_list-prodline_net = 'Packaging'.
+      ENDIF.
+
+      APPEND it_list.
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY vbeln.
+
+  WRITE: /1(20) 'SO',
+         12     'SoldTo',
+         48     'EndUser',
+         84     'City',
+        120     'ST',
+        124     'Material',
+        143     'Description',
+        184     'QTY',
+        204     'NET',
+        226     'TOTAL',
+        248    'SE1',
+        289    'SE2',
+        330    'Industry',
+        351    'Product',
+        392    'PH',
+        413    'Division',
+        434    'YR',
+        442    'PGrp',
+        461    'Country',
+        469    'Created'.
+
+  LOOP AT it_list.
+    WRITE: /
+         it_list-vbeln    ,    "So number
+         it_list-sname1   , "Sold to Customer
+         it_list-ename1   ,    "End User Customer
+         it_list-eort01   ,
+         it_list-eregio   ,
+         it_list-matnr    ,    "material
+         it_list-arktx    ,    "description
+         it_list-kwmeng   ,   "qty
+         it_list-netwr    ,
+         it_list-total_net,
+         it_list-se1      ,  "Sales Emp 1
+         it_list-se2      ,  "Sales Emp 2
+         it_list-kvgr1_txt,   "industry name
+         it_list-mvgr1_txt,   "material group txt
+         it_list-prodline_net,          "PH, CI, etc
+         it_list-division,           "Division
+         it_list-year,
+         it_list-prodline_qty,        "CCW, DACS, etc
+         it_list-eland1,
+      469   it_list-erdat.
+  ENDLOOP.
+
+ENDFORM.                    "poultry_report1
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  pack_sales_by_State
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM pack_sales_by_state.
+  DATA tbx LIKE sy-tabix.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         vbeln       LIKE vbak-vbeln,    "So number
+         erdat       LIKE vbak-erdat,
+         sname1         LIKE kna1-name1, "Sold to Customer
+         "ename1         LIKE kna1-name1,    "End User Customer
+         "eort01         LIKE kna1-ort01,
+         sort01        LIKE kna1-ort01,
+         sregio         LIKE kna1-regio,
+         sland1         LIKE kna1-land1,
+         "matnr          LIKE vbap-matnr,    "material
+         "arktx          LIKE vbap-arktx,    "description
+         "kwmeng         LIKE vbap-kwmeng,   "qty
+         netwr          LIKE vbap-netwr,    "net
+         total_net      LIKE vbap-netwr,
+         "se1            LIKE pa0002-nachn,  "Sales Emp 1
+         "se2            LIKE pa0002-nachn,  "Sales Emp 2
+         "kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+         "mvgr1_txt      LIKE tvm1t-bezei,   "material group txt
+         prodline_net(20)  TYPE c,          "PH, CI, etc
+         division(20)    TYPE c,            "Division
+         year(7)     TYPE c,
+         "prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+         END OF it_list.
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+    "delete it_out where ekonzs <> 'MARS'.
+    DELETE it_out WHERE auart = 'ZSER'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    DELETE it_out WHERE auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE ekonzs = 'FRITO'.
+    DELETE it_out WHERE division <> 'Packaging'.
+    DELETE it_out WHERE prodline_net = 'INSTALL'.
+    DELETE it_out WHERE prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+    DELETE it_out WHERE ( sland1 <> 'US' AND sland1 <> 'CA' ).
+
+
+    "delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                      mvgr1_txt <> 'Poultry - raw'    and
+    "                      mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      CLEAR it_list.
+      MOVE-CORRESPONDING it_out TO it_list.  " from it_out.
+      it_list-netwr       = it_list-netwr .
+
+      CONCATENATE 'YR_' it_out-vbeln+0(4) INTO it_list-year.
+
+      IF ( it_out-prodline_net = space      OR
+           it_out-prodline_net = 'INSTALL'  OR
+           it_out-prodline_net = 'CI'       OR
+           it_out-prodline_net = 'TRAY_SEAL' ).   "is initial.
+        it_list-prodline_net = 'Packaging'.
+      ENDIF.
+
+      APPEND it_list.
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY vbeln.
+
+  WRITE: /1(20) 'SO',
+         12     'SoldTo',
+         48     'ST',
+         52     'NetValue',
+         74     'Year',
+         82     'ProdGroup',
+        103     'Division',
+        124     'Country',
+        132     'City',
+        168     'Created'.
+
+  LOOP AT it_list.
+    WRITE: /
+         it_list-vbeln    ,    "So number
+         it_list-sname1   , "Sold to Customer
+         it_list-sregio   ,
+         it_list-netwr    ,
+         it_list-year,
+         it_list-prodline_net,          "PH, CI, etc
+         it_list-division,
+         it_list-sland1,
+      132   it_list-sort01,
+         it_list-erdat.       "city
+
+  ENDLOOP.
+
+ENDFORM.                    "pack_sales_by_State
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  report_stuff_for_map
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM report_stuff_for_map.
+  DATA tbx LIKE sy-tabix.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         vbeln       LIKE vbak-vbeln,    "So number
+         sname1         LIKE kna1-name1, "Sold to Customer
+         ename1         LIKE kna1-name1,    "End User Customer
+         eort01         LIKE kna1-ort01,
+         eregio         LIKE kna1-regio,
+         eland1         LIKE kna1-land1,
+         matnr          LIKE vbap-matnr,    "material
+         arktx          LIKE vbap-arktx,    "description
+         kwmeng         LIKE vbap-kwmeng,   "qty
+         netwr          LIKE vbap-netwr,    "net
+         total_net      LIKE vbap-netwr,
+         se1            LIKE pa0002-nachn,  "Sales Emp 1
+         se2            LIKE pa0002-nachn,  "Sales Emp 2
+         kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+         mvgr1_txt      LIKE tvm1t-bezei,   "material group txt
+         prodline_net(20)  TYPE c,          "PH, CI, etc
+         division(20)    TYPE c,            "Division
+         year(7)     TYPE c,
+         prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+         END OF it_list.
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+
+    DELETE it_out WHERE auart = 'ZSER'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    DELETE it_out WHERE auart = 'ZOR'.
+    "delete it_out where auart = 'ZMTO'.
+
+    DELETE it_out WHERE vbeln < '1999000000'.
+
+    DELETE it_out WHERE ekonzs <> 'FRITO'.
+
+    """delete it_out where division <> 'Packaging'.
+
+    """delete it_out where prodline_net = 'INSTALL'.
+    """delete it_out where prodline_net = 'CI'.
+    DELETE it_out WHERE sland1 <> 'US'.
+
+    """delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                     mvgr1_txt <> 'Poultry - raw'    and
+    "                     mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      CLEAR it_list.
+
+
+      MOVE-CORRESPONDING it_out TO it_list.  " from it_out.
+      it_list-netwr       = it_out-netwr / it_out-kwmeng.
+      it_list-total_net   = it_out-netwr .
+      CONCATENATE 'YR_' it_out-vbeln+0(4) INTO it_list-year.
+
+      " if it_out-prodline_net = space.   "is initial.
+      "    it_list-prodline_net = 'Packaging'.
+      " endif.
+
+      APPEND it_list.
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY vbeln.
+
+  WRITE: /1(20) 'SO',
+         12     'SoldTo',
+         48     'EndUser',
+         84     'City',
+        120     'ST',
+        124     'Material',
+        143     'Description',
+        184     'QTY',
+        204     'NET',
+        226     'TOTAL',
+        248    'SE1',
+        289    'SE2',
+        330    'Industry',
+        351    'Product',
+        392    'PH',
+        413    'Division',
+        434    'YR',
+        442    'PGrp',
+        461    'Country'.
+
+  LOOP AT it_list.
+    WRITE: /
+         it_list-vbeln    ,    "So number
+         it_list-sname1   , "Sold to Customer
+         it_list-ename1   ,    "End User Customer
+         it_list-eort01   ,
+         it_list-eregio   ,
+         it_list-matnr    ,    "material
+         it_list-arktx    ,    "description
+         it_list-kwmeng   ,   "qty
+         it_list-netwr    ,
+         it_list-total_net,
+         it_list-se1      ,  "Sales Emp 1
+         it_list-se2      ,  "Sales Emp 2
+         it_list-kvgr1_txt,   "industry name
+         it_list-mvgr1_txt,   "material group txt
+         it_list-prodline_net,          "PH, CI, etc
+         it_list-division,           "Division
+         it_list-year,
+         it_list-prodline_qty,        "CCW, DACS, etc
+         it_list-eland1.
+  ENDLOOP.
+
+ENDFORM.                    "report_stuff_for_map
+
+
+* Sales by Division / frito group
+
+FORM fritoreportforgl.
+  DATA: tbx LIKE sy-tabix,
+        cust(100) TYPE c.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  it_year-yr = '2017'.
+  APPEND it_year.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+    "delete it_out where ekonzs <> 'MARS'.
+    "delete it_out where auart = 'ZSER'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    "delete it_out where auart = 'ZOR'.
+    "delete it_out where vbeln < '1999000000'.
+    DELETE it_out WHERE ekonzs <> 'FRITO'.
+    "delete it_out where division <> 'Packaging'.
+    "delete it_out where prodline_net = 'INSTALL'.
+    "delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+    "delete it_out where ( sland1 <> 'US' and sland1 <> 'CA' ).
+
+
+    "delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                      mvgr1_txt <> 'Poultry - raw'    and
+    "                      mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+  ENDLOOP.
+
+
+  WRITE: /1     'CustGroup',
+         12     'SalesOrder',
+         23     'EndUserName',
+         59     'SoldToName',
+        107     'NetValue',
+        117     'Group',
+        144     'Week',
+        150     'Material',
+        169     'MaterialDescription',
+        210     'Customer'.
+
+  LOOP AT it_out.
+
+    CLEAR cust.
+    IF it_out-ekunnr <> it_out-skunnr.
+      CONCATENATE it_out-sname1
+                  '('
+                  it_out-ename1
+                  ','
+                  it_out-eort01
+                  ')' INTO cust SEPARATED BY space.
+    ELSE.
+      CONCATENATE it_out-ename1
+                  it_out-eort01
+                  INTO cust  SEPARATED BY space.
+    ENDIF.
+
+    WRITE: /
+         it_out-ekonzs,
+         it_out-vbeln,       "So number
+         it_out-ename1,      "end user name
+         it_out-sname1,      "sold to name
+         it_out-netwr,
+         it_out-division,
+         it_out-week,
+         it_out-matnr,
+         it_out-arktx,
+         cust.
+
+  ENDLOOP.
+
+ENDFORM.                    "FritoReportForGL
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  listAllModelUsedInZOR
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM listallmodelusedinzor.
+  DATA: tbx LIKE sy-tabix,
+        n(1) TYPE c,
+        htype LIKE dd01v-datatype,
+        tst_1(1) type c.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         vbeln       LIKE vbak-vbeln,    "So number
+         sname1         LIKE kna1-name1, "Sold to Customer
+         ename1         LIKE kna1-name1,    "End User Customer
+         eort01         LIKE kna1-ort01,
+         eregio         LIKE kna1-regio,
+         eland1         LIKE kna1-land1,
+         matnr          LIKE vbap-matnr,    "material
+         arktx          LIKE vbap-arktx,    "description
+         kwmeng         LIKE vbap-kwmeng,   "qty
+         netwr          LIKE vbap-netwr,    "net
+         total_net      LIKE vbap-netwr,
+         se1            LIKE pa0002-nachn,  "Sales Emp 1
+         se2            LIKE pa0002-nachn,  "Sales Emp 2
+         kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+         mvgr1_txt      LIKE tvm1t-bezei,   "material group txt
+         prodline_net(20)  TYPE c,          "PH, CI, etc
+         division(20)    TYPE c,            "Division
+         year(7)     TYPE c,
+         prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+         END OF it_list.
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+
+IF 5 = 6.
+  it_year-yr = '2016'.
+  APPEND it_year.
+
+
+    it_year-yr = '2015'.
+    APPEND it_year.
+    it_year-yr = '2014'.
+    APPEND it_year.
+
+
+    it_year-yr = '2013'.
+    APPEND it_year.
+    it_year-yr = '2012'.
+    APPEND it_year.
+    it_year-yr = '2011'.
+    APPEND it_year.
+  ENDIF.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+
+    DELETE it_out WHERE auart <> 'ZOR'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    "delete it_out where auart = 'ZOR'.
+    "delete it_out where auart = 'ZMTO'.
+
+    DELETE it_out WHERE vbeln < '1999000000'.
+
+    "delete it_out where ekonzs <> 'FRITO'.
+    DELETE it_out WHERE division = 'PartsIshida'.
+    """delete it_out where prodline_net = 'INSTALL'.
+    """delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+
+    """delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                     mvgr1_txt <> 'Poultry - raw'    and
+    "                     mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      n = it_out-matnr.
+
+
+      tst_1 = it_out-matnr.    "check for "X-" leading materials
+
+
+      "check numeric
+      CALL FUNCTION 'NUMERIC_CHECK'
+        EXPORTING
+          string_in  = n
+        IMPORTING
+          string_out = n
+          htype      = htype.
+
+      IF htype <> 'NUMC' and tst_1 <> 'X'.
+
+
+        CLEAR it_list.
+
+        MOVE-CORRESPONDING it_out TO it_list.  " from it_out.
+        it_list-netwr       = it_out-netwr / it_out-kwmeng.
+        it_list-total_net   = it_out-netwr .
+        CONCATENATE 'YR_' it_out-vbeln+0(4) INTO it_list-year.
+
+        " if it_out-prodline_net = space.   "is initial.
+        "    it_list-prodline_net = 'Packaging'.
+        " endif.
+
+        APPEND it_list.
+      ENDIF.
+
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY matnr ASCENDING vbeln DESCENDING.
+
+  WRITE: /1(20) 'SO',
+         12     'SoldTo',
+         48     'EndUser',
+         84     'City',
+        120     'ST',
+        124     'Material',
+        143     'Description',
+        184     'QTY',
+        204     'NET',
+        226     'TOTAL',
+        248    'SE1',
+        289    'SE2',
+        330    'Industry',
+        351    'Product',
+        392    'PH',
+        413    'Division',
+        434    'YR',
+        442    'PGrp',
+        461    'Country'.
+
+  LOOP AT it_list.
+    WRITE: /
+         it_list-vbeln    ,    "So number
+         it_list-sname1   , "Sold to Customer
+         it_list-ename1   ,    "End User Customer
+         it_list-eort01   ,
+         it_list-eregio   ,
+         it_list-matnr    ,    "material
+         it_list-arktx    ,    "description
+         it_list-kwmeng   ,   "qty
+         it_list-netwr    ,
+         it_list-total_net,
+         it_list-se1      ,  "Sales Emp 1
+         it_list-se2      ,  "Sales Emp 2
+         it_list-kvgr1_txt,   "industry name
+         it_list-mvgr1_txt,   "material group txt
+         it_list-prodline_net,          "PH, CI, etc
+         it_list-division,           "Division
+         it_list-year,
+         it_list-prodline_qty,        "CCW, DACS, etc
+         it_list-eland1.
+  ENDLOOP.
+
+
+
+ENDFORM.                    "listAllModelUsedInZOR
+
+
+
+FORM countZOR_Lines.
+  DATA: tbx LIKE sy-tabix,
+        n(1) TYPE c,
+        htype LIKE dd01v-datatype,
+        tst_1(1) type c,
+        ctr type i.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         vbeln       LIKE vbak-vbeln,    "So number
+         sname1         LIKE kna1-name1, "Sold to Customer
+         ename1         LIKE kna1-name1,    "End User Customer
+         eort01         LIKE kna1-ort01,
+         eregio         LIKE kna1-regio,
+         eland1         LIKE kna1-land1,
+         matnr          LIKE vbap-matnr,    "material
+         arktx          LIKE vbap-arktx,    "description
+         kwmeng         LIKE vbap-kwmeng,   "qty
+         netwr          LIKE vbap-netwr,    "net
+         total_net      LIKE vbap-netwr,
+         se1            LIKE pa0002-nachn,  "Sales Emp 1
+         se2            LIKE pa0002-nachn,  "Sales Emp 2
+         kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+         mvgr1_txt      LIKE tvm1t-bezei,   "material group txt
+         prodline_net(20)  TYPE c,          "PH, CI, etc
+         division(20)    TYPE c,            "Division
+         year(7)     TYPE c,
+         prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+         END OF it_list.
+
+  it_year-yr = '2016'.
+  APPEND it_year.
+
+  "IF 5 = 6.
+    it_year-yr = '2015'.
+    APPEND it_year.
+    it_year-yr = '2014'.
+    APPEND it_year.
+    it_year-yr = '2013'.
+    APPEND it_year.
+    it_year-yr = '2012'.
+    APPEND it_year.
+    it_year-yr = '2011'.
+    APPEND it_year.
+  "ENDIF.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+
+    DELETE it_out WHERE auart <> 'ZOR'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    "delete it_out where auart = 'ZOR'.
+    "delete it_out where auart = 'ZMTO'.
+
+    DELETE it_out WHERE vbeln < '1999000000'.
+
+    "delete it_out where ekonzs <> 'FRITO'.
+    DELETE it_out WHERE division = 'PartsIshida'.
+    """delete it_out where prodline_net = 'INSTALL'.
+    """delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+
+    """delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                     mvgr1_txt <> 'Poultry - raw'    and
+    "                     mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+       ctr = ctr + 1.
+
+        MOVE-CORRESPONDING it_out TO it_list.  " from it_out.
+        it_list-netwr       = it_out-netwr / it_out-kwmeng.
+        it_list-total_net   = it_out-netwr .
+        CONCATENATE 'YR_' it_out-vbeln+0(4) INTO it_list-year.
+
+        APPEND it_list.
+
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY matnr ASCENDING vbeln DESCENDING.
+
+  write: /1 'ctr =',
+             ctr.
+
+  WRITE: /1(20) 'SO',
+         12     'SoldTo',
+         48     'EndUser',
+         84     'City',
+        120     'ST',
+        124     'Material',
+        143     'Description',
+        184     'QTY',
+        204     'NET',
+        226     'TOTAL',
+        248    'SE1',
+        289    'SE2',
+        330    'Industry',
+        351    'Product',
+        392    'PH',
+        413    'Division',
+        434    'YR',
+        442    'PGrp',
+        461    'Country'.
+
+  LOOP AT it_list.
+    WRITE: /
+         it_list-vbeln    ,    "So number
+         it_list-sname1   , "Sold to Customer
+         it_list-ename1   ,    "End User Customer
+         it_list-eort01   ,
+         it_list-eregio   ,
+         it_list-matnr    ,    "material
+         it_list-arktx    ,    "description
+         it_list-kwmeng   ,   "qty
+         it_list-netwr    ,
+         it_list-total_net,
+         it_list-se1      ,  "Sales Emp 1
+         it_list-se2      ,  "Sales Emp 2
+         it_list-kvgr1_txt,   "industry name
+         it_list-mvgr1_txt,   "material group txt
+         it_list-prodline_net,          "PH, CI, etc
+         it_list-division,           "Division
+         it_list-year,
+         it_list-prodline_qty,        "CCW, DACS, etc
+         it_list-eland1.
+  ENDLOOP.
+
+
+
+ENDFORM.
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  listAllLinesSoldOnZmto
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM listalllinessoldonzmto.
+
+  DATA: tbx LIKE sy-tabix,
+       n(1) TYPE c,
+       htype LIKE dd01v-datatype.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         vbeln       LIKE vbak-vbeln,    "So number
+         sname1         LIKE kna1-name1, "Sold to Customer
+         ename1         LIKE kna1-name1,    "End User Customer
+         eort01         LIKE kna1-ort01,
+         eregio         LIKE kna1-regio,
+         eland1         LIKE kna1-land1,
+         matnr          LIKE vbap-matnr,    "material
+         arktx          LIKE vbap-arktx,    "description
+         kwmeng         LIKE vbap-kwmeng,   "qty
+         netwr          LIKE vbap-netwr,    "net
+         total_net      LIKE vbap-netwr,
+         se1            LIKE pa0002-nachn,  "Sales Emp 1
+         se2            LIKE pa0002-nachn,  "Sales Emp 2
+         kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+         mvgr1_txt      LIKE tvm1t-bezei,   "material group txt
+         prodline_net(20)  TYPE c,          "PH, CI, etc
+         division(20)    TYPE c,            "Division
+         year(7)     TYPE c,
+         prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+         END OF it_list.
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+
+
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+
+    "delete it_out where auart <> 'ZOR'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    "delete it_out where auart = 'ZOR'.
+    DELETE it_out WHERE auart <> 'ZMTO'.
+
+    DELETE it_out WHERE vbeln < '1999000000'.
+
+    "delete it_out where ekonzs <> 'FRITO'.
+    "delete it_out where division = 'PartsIshida'.
+    """delete it_out where prodline_net = 'INSTALL'.
+    """delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+
+    """delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                     mvgr1_txt <> 'Poultry - raw'    and
+    "                     mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+
+      CLEAR it_list.
+
+      MOVE-CORRESPONDING it_out TO it_list.  " from it_out.
+      it_list-netwr       = it_out-netwr / it_out-kwmeng.
+      it_list-total_net   = it_out-netwr .
+      CONCATENATE 'YR_' it_out-vbeln+0(4) INTO it_list-year.
+
+      " if it_out-prodline_net = space.   "is initial.
+      "    it_list-prodline_net = 'Packaging'.
+      " endif.
+
+      APPEND it_list.
+
+
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY vbeln.
+
+  WRITE: /1(20) 'SO',
+         12     'SoldTo',
+         48     'EndUser',
+         84     'City',
+        120     'ST',
+        124     'Material',
+        143     'Description',
+        184     'QTY',
+        204     'NET',
+        226     'TOTAL',
+        248    'SE1',
+        289    'SE2',
+        330    'Industry',
+        351    'Product',
+        392    'PH',
+        413    'Division',
+        434    'YR',
+        442    'PGrp',
+        461    'Country'.
+
+  LOOP AT it_list.
+    WRITE: /
+         it_list-vbeln    ,    "So number
+         it_list-sname1   , "Sold to Customer
+         it_list-ename1   ,    "End User Customer
+         it_list-eort01   ,
+         it_list-eregio   ,
+         it_list-matnr    ,    "material
+         it_list-arktx    ,    "description
+         it_list-kwmeng   ,   "qty
+         it_list-netwr    ,
+         it_list-total_net,
+         it_list-se1      ,  "Sales Emp 1
+         it_list-se2      ,  "Sales Emp 2
+         it_list-kvgr1_txt,   "industry name
+         it_list-mvgr1_txt,   "material group txt
+         it_list-prodline_net,          "PH, CI, etc
+         it_list-division,           "Division
+         it_list-year,
+         it_list-prodline_qty,        "CCW, DACS, etc
+         it_list-eland1.
+  ENDLOOP.
+
+
+
+ENDFORM.                    "listAllLinesSoldOnZmto
+
+
+
+
+FORM find_so_w_text_in_mat_desc.
+
+  DATA: tbx LIKE sy-tabix,
+       n(1) TYPE c,
+       htype LIKE dd01v-datatype.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+
+  it_year-yr = '2017'.
+  APPEND it_year.
+
+  it_year-yr = '2016'.
+  APPEND it_year.
+
+  if 5 = 6.
+  it_year-yr = '2015'.
+  APPEND it_year.
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+ endif.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+
+    "delete it_out where auart <> 'ZOR'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    "delete it_out where auart = 'ZOR'.
+    DELETE it_out WHERE auart <> 'ZMTO'.
+
+    DELETE it_out WHERE vbeln < '1999000000'.
+
+    "delete it_out where ekonzs <> 'FRITO'.
+    "delete it_out where division = 'PartsIshida'.
+    """delete it_out where prodline_net = 'INSTALL'.
+    """delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+
+    """delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                     mvgr1_txt <> 'Poultry - raw'    and
+    "                     mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+
+     if it_out-arktx cs 'PASSIVATION'. " or
+     "   it_out-arktx cs 'SCREEN'.
+
+      " if it_out-prodline_net = space.   "is initial.
+      "    it_list-prodline_net = 'Packaging'.
+      " endif.
+        write:/ it_out-vbeln,
+                it_out-posnr,
+                it_out-matnr,
+                it_out-arktx,
+                it_out-auart.
+
+     endif.
+
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+
+ENDFORM.                    "listAllLinesSoldOnZmto
+
+
+
+
+* Nestle group - all assets
+
+FORM NestleReportAllAssets.
+  DATA: tbx LIKE sy-tabix,
+        cust(100) TYPE c,
+        dt(10) type c,
+        statename(25) type c,
+        countryname(25) type c.
+
+  data: it_out2 like it_out OCCURS 0 WITH HEADER LINE.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+"if 4 = 6.
+  it_year-yr = '1999'.
+  APPEND it_year.
+  it_year-yr = '2000'.
+  APPEND it_year.
+  it_year-yr = '2001'.
+  APPEND it_year.
+  it_year-yr = '2002'.
+  APPEND it_year.
+  it_year-yr = '2003'.
+  APPEND it_year.
+  it_year-yr = '2004'.
+  APPEND it_year.
+  it_year-yr = '2005'.
+  APPEND it_year.
+  it_year-yr = '2006'.
+  APPEND it_year.
+  it_year-yr = '2007'.
+  APPEND it_year.
+  it_year-yr = '2008'.
+  APPEND it_year.
+  it_year-yr = '2009'.
+  APPEND it_year.
+  it_year-yr = '2010'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2015'.
+  APPEND it_year.
+  it_year-yr = '2016'.
+  APPEND it_year.
+  it_year-yr = '2017'.
+  APPEND it_year.
+"endif.
+
+
+  "it_year-yr = '1999'.
+  "APPEND it_year.
+
+
+  LOOP AT it_year.
+
+    PERFORM showprogress USING it_year-yr. " strmssg.
+
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+    "delete it_out where ekonzs <> 'MARS'.
+    delete it_out where auart = 'ZSER'.
+    delete it_out where dismm = 'V1'.
+    delete it_out where dismm = 'P3'.
+    delete it_out where dismm is initial.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    delete it_out where auart = 'ZOR'.
+    delete it_out where vbeln < '1999000000'.
+    DELETE it_out WHERE ekonzs <> 'NESTLE'.
+    "delete it_out where division <> 'Packaging'.
+    "delete it_out where prodline_net = 'INSTALL'.
+    "delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+    "delete it_out where ( sland1 <> 'US' and sland1 <> 'CA' ).
+
+
+    "delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                      mvgr1_txt <> 'Poultry - raw'    and
+    "                      mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+
+    loop at it_out.
+      it_out2 = it_out.
+      append it_out2.
+
+    endloop.
+
+  ENDLOOP.
+
+  it_out[] = it_out2[].
+
+
+  WRITE: /1     'CustGroup',
+         12     'SalesOrder',
+         23     'EndUserName',
+         59     'SoldToName',
+        107     'NetValue',
+        117     'Group',
+        144     'Week',
+        150     'Material',
+        169     'MaterialDescription',
+        210     'DelivDate',
+        221     'Customer',
+        337     'QTY',
+        342     'EndUserName',
+        378     'EnduserCity',
+        413     'Reg',
+        418     'LD',
+        422     'CityName',
+        448     'CountryName'.
+
+
+  LOOP AT it_out.
+
+    PERFORM return_state_name USING it_out-eland1
+                                    it_out-eregio
+                           CHANGING statename.
+
+    PERFORM return_country_name USING  it_out-eland1
+                             CHANGING countryname.
+
+    PERFORM f_converttolocaldt USING it_out-vdatu
+                            CHANGING dt.
+
+
+
+    CLEAR cust.
+    IF it_out-ekunnr <> it_out-skunnr.
+      CONCATENATE it_out-sname1
+                  '('
+                  it_out-ename1
+                  ','
+                  it_out-eort01
+                  ')' INTO cust SEPARATED BY space.
+    ELSE.
+      CONCATENATE it_out-ename1
+                  it_out-eort01
+                  INTO cust  SEPARATED BY space.
+    ENDIF.
+
+    WRITE: /
+         it_out-ekonzs,
+         it_out-vbeln,       "So number
+         it_out-ename1,      "end user name
+         it_out-sname1,      "sold to name
+         it_out-netwr,
+         it_out-division,
+         it_out-week,
+         it_out-matnr,
+         it_out-arktx,
+         dt,
+         cust,
+         it_out-kwmeng,
+         it_out-ename1,
+         it_out-eort01,
+         it_out-eregio,
+         it_out-eland1,
+         statename,
+         countryname.
+
+  ENDLOOP.
+
+ENDFORM.
+
+
+
+
+
+
+
+
+***********************************************************
+
+FORM return_state_name USING ctry LIKE t005u-land1
+                             regio LIKE t005u-bland
+                      CHANGING statename TYPE c.
+
+  IF it_t005u[] IS INITIAL.
+    SELECT * FROM t005u INTO TABLE it_t005u WHERE spras = 'EN'.
+    SORT it_t005u BY land1 bland.
+  ENDIF.
+
+  statename = space.
+
+  READ TABLE it_t005u WITH KEY land1 = ctry
+                               bland = regio BINARY SEARCH.
+  IF sy-subrc = 0.
+    statename = it_t005u-bezei.
+  ENDIF.
+
+ENDFORM.                    "return_state_name
+
+*&---------------------------------------------------------------------*
+*&      Form  return_country_name
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->CTRY         text
+*      -->COUNTRYNAME  text
+*----------------------------------------------------------------------*
+FORM return_country_name USING ctry LIKE t005t-land1
+                      CHANGING countryname TYPE c.
+
+  IF it_t005t[] IS INITIAL.
+    SELECT * FROM t005t INTO TABLE it_t005t WHERE spras = 'EN'.
+    SORT it_t005t BY land1.
+  ENDIF.
+
+  countryname = space.
+
+  READ TABLE it_t005t WITH KEY land1 = ctry BINARY SEARCH.
+  IF sy-subrc = 0.
+    countryname = it_t005t-landx.
+  ENDIF.
+
+ENDFORM.                    "return_country_name
+
+
+
+FORM check_ceia_extract. "consider changing filter
+  DATA: tbx LIKE sy-tabix,
+       n(1) TYPE c,  ctr type i,
+       htype LIKE dd01v-datatype.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+
+  it_year-yr = '2017'.
+  APPEND it_year.
+
+
+if 5 = 6.
+  it_year-yr = '2016'.
+  APPEND it_year.
+
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+
+  it_year-yr = '2014'.
+  APPEND it_year.
+
+
+
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+endif.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+
+    "delete it_out where auart <> 'ZOR'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    "delete it_out where auart = 'ZOR'.
+    DELETE it_out WHERE auart <> 'ZMTO'.
+
+    DELETE it_out WHERE vbeln < '1999000000'.
+
+    "delete it_out where ekonzs <> 'FRITO'.
+    "delete it_out where division = 'PartsIshida'.
+    """delete it_out where prodline_net = 'INSTALL'.
+    """delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+
+    """delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                     mvgr1_txt <> 'Poultry - raw'    and
+    "                     mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    skip 2.
+    ctr = 0.
+
+    LOOP AT it_out.
+
+     if ( it_out-arktx cs 'MTL DET,TE' and it_out-arktx cs 'CEIA' ) or
+        ( it_out-arktx cs 'THS' and it_out-arktx cs 'CEIA' ).
+
+      " if it_out-prodline_net = space.   "is initial.
+      "    it_list-prodline_net = 'Packaging'.
+      " endif.
+
+        if it_out-abgru is initial.
+            ctr = ctr + it_out-kwmeng.
+            else.
+            ctr = ctr - it_out-kwmeng.
+        endif.
+
+        write:/ it_year-yr,
+                ctr,
+                it_out-vbeln,
+                it_out-posnr,
+                it_out-matnr,
+                it_out-arktx,
+                it_out-kwmeng,
+                it_out-abgru,
+                it_out-prodline_qty.
+
+     endif.
+
+    ENDLOOP.
+
+  ENDLOOP.
+
+endform.
+
+
+
+FORM orders_by_product.
+  DATA: tbx           LIKE sy-tabix,
+       mvgr1_txt      LIKE tvm1t-bezei.   "product group txt.
+
+  mvgr1_txt = 'French fries'.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         vbeln          LIKE vbak-vbeln,    "So number
+         erdat          LIKE vbak-erdat,
+         sname1         LIKE kna1-name1, "Sold to Customer
+         ename1         LIKE kna1-name1,    "End User Customer
+         eort01         LIKE kna1-ort01,
+         eregio         LIKE kna1-regio,
+         eland1         LIKE kna1-land1,
+         matnr          LIKE vbap-matnr,    "material
+         arktx          LIKE vbap-arktx,    "description
+         kwmeng         LIKE vbap-kwmeng,   "qty
+         netwr          LIKE vbap-netwr,    "net
+         total_net      LIKE vbap-netwr,
+         se1            LIKE pa0002-nachn,  "Sales Emp 1
+         se2            LIKE pa0002-nachn,  "Sales Emp 2
+         kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+         mvgr1_txt      LIKE tvm1t-bezei,   "material group txt
+         prodline_net(20)  TYPE c,          "PH, CI, etc
+         division(20)    TYPE c,            "Division
+         year(7)     TYPE c,
+         prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+         END OF it_list.
+
+  it_year-yr = '2017'.
+  APPEND it_year.
+  it_year-yr = '2016'.
+  APPEND it_year.
+  it_year-yr = '2015'.
+  APPEND it_year.
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+  it_year-yr = '2010'.
+  APPEND it_year.
+  it_year-yr = '2009'.
+  APPEND it_year.
+  it_year-yr = '2008'.
+  APPEND it_year.
+  it_year-yr = '2007'.
+  APPEND it_year.
+  it_year-yr = '2006'.
+  APPEND it_year.
+  it_year-yr = '2005'.
+  APPEND it_year.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+    "delete it_out where ekonzs <> 'MARS'.
+    DELETE it_out WHERE auart = 'ZSER'.
+    DELETE it_out WHERE auart = 'KB'.
+    DELETE it_out WHERE auart = 'KA'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    DELETE it_out WHERE auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    "DELETE it_out WHERE ekonzs = 'FRITO'.
+    "DELETE it_out WHERE division <> 'Packaging'.
+    "DELETE it_out WHERE prodline_net <> 'PH'.
+    "DELETE it_out WHERE prodline_net = 'CI'.
+    "DELETE it_out WHERE ( sland1 <> 'US' AND sland1 <> 'CA' ).
+    DELETE it_out WHERE kvgr1_txt <> mvgr1_txt.
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      CLEAR it_list.
+
+
+      MOVE-CORRESPONDING it_out TO it_list.  " from it_out.
+      it_list-netwr       = it_out-netwr / it_out-kwmeng.
+      it_list-total_net   = it_out-netwr .
+      CONCATENATE 'YR_' it_out-vbeln+0(4) INTO it_list-year.
+
+      IF it_out-prodline_net = space.   "is initial.
+        it_list-prodline_net = 'Packaging'.
+      ENDIF.
+
+      APPEND it_list.
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY vbeln.
+
+  WRITE: /1(20) 'SO',
+         12     'SoldTo',
+         48     'EndUser',
+         84     'City',
+        120     'ST',
+        124     'Material',
+        143     'Description',
+        184     'QTY',
+        204     'NET',
+        226     'TOTAL',
+        248    'SE1',
+        289    'SE2',
+        330    'Industry',
+        351    'Product',
+        392    'PH',
+        413    'Division',
+        434    'YR',
+        442    'PGrp',
+        461    'Country',
+        469    'Created'.
+
+  LOOP AT it_list.
+    WRITE: /
+         it_list-vbeln    ,    "So number
+         it_list-sname1   , "Sold to Customer
+         it_list-ename1   ,    "End User Customer
+         it_list-eort01   ,
+         it_list-eregio   ,
+         it_list-matnr    ,    "material
+         it_list-arktx    ,    "description
+         it_list-kwmeng   ,   "qty
+         it_list-netwr    ,
+         it_list-total_net,
+         it_list-se1      ,  "Sales Emp 1
+         it_list-se2      ,  "Sales Emp 2
+         it_list-kvgr1_txt,   "industry name
+         it_list-mvgr1_txt,   "material group txt
+         it_list-prodline_net,          "PH, CI, etc
+         it_list-division,           "Division
+         it_list-year,
+         it_list-prodline_qty,        "CCW, DACS, etc
+         it_list-eland1,
+      469   it_list-erdat.
+  ENDLOOP.
+
+ENDFORM.                    "poultry_report1
+
+
+
+form orders_pck_cc.
+    DATA: tbx LIKE sy-tabix,
+          cust(100) TYPE c,
+          countryname(15) type c,
+          statename(15) type c.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+        yr TYPE string,
+        END OF it_year.
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+
+  it_year-yr = '2016'.
+  APPEND it_year.
+
+  it_year-yr = '2017'.
+  APPEND it_year.
+
+
+   WRITE: /1     'CustGroup',
+           12     'SalesOrder',
+           23     'EndUserName',
+           59     'SoldToName',
+           95     'NetValue',
+          117     'Group',
+          138     'Week',
+          150     'Material',
+          169     'MaterialDescription',
+          210     'Customer',
+          311     'City',
+          347     'St',
+          351     'CO',
+          367     'YEAR',
+          372     'STATENAME'.
+
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+    "delete it_out where ekonzs <> 'MARS'.
+    "delete it_out where auart = 'ZSER'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    "delete it_out where auart = 'ZOR'.
+    "delete it_out where vbeln < '1999000000'.
+    "delete it_out where division <> 'Packaging'.
+    "delete it_out where prodline_net = 'INSTALL'.
+    "delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+    "delete it_out where ( sland1 <> 'US' and sland1 <> 'CA' ).
+    DELETE it_out WHERE ekonzs = 'FRITO'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+    DELETE it_out WHERE vkgrp <> '001'.
+    DELETE it_out WHERE division = 'Snack'.
+    DELETE it_out WHERE division = 'PreparedFoods'.
+    DELETE it_out WHERE eland1 <> 'US'.
+
+  LOOP AT it_out.
+
+    if it_out-division = 'Spray'.
+      it_out-division = 'CC'.
+    endif.
+    if it_out-division = 'Packaging'.
+      "Move stuff out of packaging
+      if it_out-prodline_net = 'PH'.
+        it_out-division = 'CC'.
+      endif.
+
+      if it_out-prodline_qty = 'DACS'.
+        it_out-division = 'INSP'.
+      endif.
+      if it_out-prodline_qty = 'XRAY'.
+        it_out-division = 'INSP'.
+      endif.
+      if it_out-prodline_qty = 'CEIA'.
+        it_out-division = 'INSP'.
+      endif.
+    endif.
+
+    PERFORM return_state_name USING it_out-eland1
+                                    it_out-eregio
+                           CHANGING statename.
+
+
+
+    PERFORM return_country_name USING it_out-eland1
+                      CHANGING countryname.
+
+    CLEAR cust.
+    IF it_out-ekunnr <> it_out-skunnr.
+      CONCATENATE it_out-sname1
+                  '('
+                  it_out-ename1
+                  ','
+                  it_out-eort01
+                  ')' INTO cust SEPARATED BY space.
+    ELSE.
+      CONCATENATE it_out-ename1
+                  it_out-eort01
+                  INTO cust  SEPARATED BY space.
+    ENDIF.
+
+    WRITE: /
+         it_out-ekonzs,
+         it_out-vbeln,       "So number
+         it_out-ename1,      "end user name
+         it_out-sname1,      "sold to name
+         it_out-netwr,
+         it_out-division,
+         it_out-week,
+         it_out-matnr,
+         it_out-arktx,
+         cust,
+         it_out-eort01,
+         it_out-eregio,
+         countryname,
+         it_year-yr,
+         statename.
+
+  ENDLOOP.
+ ENDLOOP.
+ENDFORM.
+
+
+SPAN {
+font-family: "Courier New";
+font-size: 10pt;
+color: #000000;
+background: #FFFFFF;
+}
+.L0S31 {
+font-style: italic;
+color: #808080;
+}
+.L0S32 {
+color: #3399FF;
+}
+.L0S33 {
+color: #4DA619;
+}
+.L0S52 {
+color: #0000FF;
+}
+.L0S55 {
+color: #800080;
+}
+.L0S70 {
+color: #808080;
+}
+
+*&---------------------------------------------------------------------*
+*& Report  Z_CATERPILLAR_ADHOC
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z_caterpillar_adhoc LINE-SIZE 665.
+
+INCLUDE:  z_common_routines.
+
+TABLES:  vbap.
+
+DATA:  BEGIN OF it_out OCCURS 1,                "results table
+             vbeln          LIKE vbak-vbeln,    "SO
+             auart          LIKE vbak-auart,    "Order type
+             vdatu          LIKE vbak-vdatu,    "Delivery date
+             vgtyp          LIKE vbap-vgtyp,    "prec doc catagory
+             vgref          LIKE vbap-vgref,    "prec doc crtd with ref
+             vgbel          LIKE vbap-vgbel,    "Prec/ref doc
+             vgpos          LIKE vbap-vgpos,    "Prec/Ref doc item
+             vbelv          LIKE vbap-vbelv,    "Orig Doc
+             posnv          LIKE vbap-posnv,    "orig item
+             ps_psp_pnr     LIKE vbap-ps_psp_pnr, "WBS
+             werks          LIKE vbap-werks,    "plant
+             source_so      LIKE vbap-vbeln,    "source so
+             source_so_item LIKE vbap-posnr,    "source so item
+             source_yr(4)   TYPE c,             "source so year
+             waerk          LIKE vbak-waerk,    "curr
+             kvgr1          LIKE vbak-kvgr1,    "Industry code
+             kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+             vkbur          LIKE vbak-vkbur,    "sales office code
+             vkbur_txt      LIKE tvkbt-bezei,   "sales office name
+             vkgrp          LIKE vbak-vkgrp,    "sales group code
+             vkgrp_txt      LIKE tvgrt-bezei,   "sales group
+             kvgr3          LIKE vbak-kvgr3,    "oip group
+             vkorg          LIKE vbak-vkorg,    "sales org
+             knumv          LIKE vbak-knumv,    "sales condition
+             skunnr         LIKE vbak-kunnr,    "Sold To No
+             sname1         LIKE kna1-name1,    "Sold to Customer
+             sort01         LIKE kna1-ort01,
+             sregio         LIKE kna1-regio,
+             sland1         LIKE kna1-land1,
+             ekunnr         LIKE vbak-kunnr,    "End User No
+             ename1         LIKE kna1-name1,    "End User Customer
+             eort01         LIKE kna1-ort01,
+             eregio         LIKE kna1-regio,
+             eland1         LIKE kna1-land1,
+             ekonzs         LIKE kna1-konzs,    "customer grtoup
+             or             LIKE pa0002-nachn,  "outside rep
+             or2            LIKE pa0002-nachn,  "outside rep 2
+             ae             LIKE pa0002-nachn,  "Application Eng
+             pm             LIKE pa0002-nachn,  "Project manager
+             se1            LIKE pa0002-nachn,  "Sales Emp 1
+             se2            LIKE pa0002-nachn,  "Sales Emp 2
+             se3            LIKE pa0002-nachn,  "Sales Emp 3
+             se4            LIKE pa0002-nachn,  "Sales Emp 4
+             se5            LIKE pa0002-nachn,  "Sales Emp 5
+             se6            LIKE pa0002-nachn,  "Sales Emp 6
+             se1_value(20)  TYPE c,
+             se2_value(20)  TYPE c,
+             se3_value(20)  TYPE c,
+             se4_value(20)  TYPE c,
+             se5_value(20)  TYPE c,
+             se6_value(20)  TYPE c,
+             posnr          LIKE vbap-posnr,    "so item
+             erdat          LIKE vbap-erdat,    "create date
+             erdat_orig     LIKE vbap-erdat,    "orinal create date
+             matnr          LIKE vbap-matnr,    "material
+             arktx          LIKE vbap-arktx,    "description
+             mvgr1          LIKE vbap-mvgr1,    "product
+             mvgr1_txt      LIKE tvm1t-bezei,   "product group txt
+             kwmeng         LIKE vbap-kwmeng,   "qty
+             netwr          LIKE vbap-netwr,    "net value
+             abgru          LIKE vbap-abgru,    "reject reason
+             abgru_txt      LIKE tvagt-bezei,
+             mvgr3          LIKE vbap-mvgr3,    "Interface
+             mvgr3_txt      LIKE tvm3t-bezei,   "Interface txt
+             mvgr5          LIKE vbap-mvgr5,    "OIP Overide
+             prodh          LIKE vbap-prodh,    "Prod Hierc
+             ph_txt_1       LIKE t179t-vtext,   "Prod Hierc txt 1
+             ph_txt_2       LIKE t179t-vtext,   "Prod Hierc txt 2
+             ph_txt_3       LIKE t179t-vtext,   "Prod Hierc txt 3
+             prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+             prodline_net(20)  TYPE c,        "PH, CI, etc
+             prodline_net2(20) TYPE c,        "Controls
+             week_no(4)      TYPE c,            "week number
+             week            TYPE i,            "week number
+             division(20)    TYPE c,            "Division
+             so_item(17)     TYPE c,            "So Item
+             bstnk           LIKE  vbak-bstnk,  "po numbers
+             dismm          TYPE marc-dismm,   "mrp type
+             plifz          TYPE marc-plifz,   "planned dlv time
+             minbe          TYPE marc-minbe,   "reorder point
+             mabst          TYPE marc-mabst,   "max stock level
+             END OF it_out.
+
+
+DATA:  it_out_se LIKE it_out OCCURS 0 WITH HEADER LINE,
+       it_t005u  like t005u OCCURS 0 WITH HEADER LINE,
+       it_t005t  like t005t OCCURS 0 WITH HEADER LINE.
+
+
+DATA:  BEGIN OF it_fnames OCCURS 1,                "results table
+             file_name LIKE rlgrap-filename,
+       END OF it_fnames.
+
+DATA:  str_mssg TYPE string,
+       file_name LIKE rlgrap-filename.
+
+
+SELECT-OPTIONS: f_names FOR vbap-arktx.  "FOR rlgrap-filename.
+
+
+INITIALIZATION.
+  %_f_names_%_app_%-text = 'FILE NAMES'.
+
+  IF  sy-sysid = 'DV2'.
+
+    MOVE: 'I'     TO f_names-sign,
+          'EQ'    TO f_names-option,
+          'PRD_2011_0010.txt'  TO f_names-low.
+    APPEND f_names.
+    MOVE: 'PRD_2012_0010.txt'  TO f_names-low.
+    APPEND f_names.
+    MOVE: 'PRD_2013_0010.txt'  TO f_names-low.
+    APPEND f_names.
+  ENDIF.
+
+
+START-OF-SELECTION.
+
+  "PERFORM create_parts_sales_by_plant.
+  "PERFORM mars_report.
+  "PERFORM conveyor_report.
+  "PERFORM zmto_20milNo_report.
+  "PERFORM zor_usingEngMaterial.
+  "PERFORM mondelez_kraft_report.
+
+  "perFORM poultry_report1.
+  "perFORM pack_sales_by_State.
+
+  "perFORM report_stuff_for_map.
+  "perform FritoReportForGL.        "every year end oct
+  "perform listAllModelUsedInZOR.
+  "perform listAllLinesSoldOnZmto.  "for experlogix review
+  "PERFORM mars_zmto_report.
+  "PERFORM find_so_w_text_in_mat_desc.
+  "PERFORM countZOR_Lines.
+  "PERFORM NestleReportAllAssets.
+  "PERFORM check_ceia_extract. "consider changing filter
+  "PERFORM orders_by_product.
+  perform orders_pck_cc.        "BrianB/GL   11/2017
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  mars_ZMTO_report
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM mars_zmto_report.
+  DATA: tbx LIKE sy-tabix,
+        it_out2 LIKE it_out OCCURS 0 WITH HEADER LINE.
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+  IF 4 = 4.
+    it_year-yr = '2014'.
+    APPEND it_year.
+    it_year-yr = '2013'.
+    APPEND it_year.
+    " it_year-yr = '2011'.
+    " append it_year.
+  ENDIF.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                   it_year-yr.
+    DELETE it_out WHERE ekonzs <> 'MARS'.
+    DELETE it_out WHERE auart = 'ZSER'.
+    DELETE it_out WHERE auart = 'L1'.
+    DELETE it_out WHERE auart = 'CR'.
+    DELETE it_out WHERE auart = 'L2'.
+    DELETE it_out WHERE auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      it_out2 = it_out.
+      APPEND it_out2.
+    ENDLOOP.
+
+  ENDLOOP.
+
+  it_out[] = it_out2[].
+
+  WRITE: /1 'vbeln',
+         12 'posnr',
+         20 'auart',
+         36 'ename1',
+         72 'eort01',
+        108 'ST',
+        113 'ct',
+        117 'matnr',
+        136 'arktx',
+        189 'qty',
+        207 'net',
+        219 'PlQty',
+        238 'Div'.
+
+
+
+  LOOP AT it_out.
+    WRITE: /1  it_out-vbeln,
+           12  it_out-posnr,
+           20  it_out-auart,
+           26  it_out-ename1,
+           72  it_out-eort01,
+          108  it_out-eregio,
+          113  it_out-eland1,
+          117  it_out-matnr,
+             it_out-arktx,
+             it_out-kwmeng,
+             it_out-netwr,
+             it_out-prodline_qty,
+             it_out-division.
+
+
+
+  ENDLOOP.
+
+ENDFORM.                    "mars_ZMTO_report
+
+
+*&---------------------------------------------------------------------*
+*&      Form  MARS_REPORT
+*&---------------------------------------------------------------------*
+*&  I need a report (sap > or
+*& crm) that shows number and dollar volume of Dacs, Ceia's, and xray
+*& sold to Mondelez per year for last three years.  I need it for
+*& US/Canada
+*& (combined) and LA/Mex with each product broken out separately.  I'm
+*& thinking SAP is most accurate way.  Can you call Mr Walsh to see if
+*& this is something he can help pull?
+*----------------------------------------------------------------------*
+FORM mondelez_kraft_report.
+  DATA: tbx LIKE sy-tabix,
+        it_out2 LIKE it_out OCCURS 0 WITH HEADER LINE.
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  it_year-yr = '2014'.
+  APPEND it_year.
+  IF 4 = 4.
+    it_year-yr = '2013'.
+    APPEND it_year.
+    it_year-yr = '2012'.
+    APPEND it_year.
+    it_year-yr = '2011'.
+    APPEND it_year.
+  ENDIF.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                   it_year-yr.
+    DELETE it_out WHERE ekonzs <> 'KRAFT'.
+    DELETE it_out WHERE auart = 'ZSER'.
+    DELETE it_out WHERE auart = 'L1'.
+    DELETE it_out WHERE auart = 'CR'.
+    DELETE it_out WHERE auart = 'L2'.
+    DELETE it_out WHERE auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      it_out2 = it_out.
+      APPEND it_out2.
+    ENDLOOP.
+
+  ENDLOOP.
+
+  it_out[] = it_out2[].
+
+  WRITE: /1 'vbeln',
+         12 'posnr',
+         20 'auart',
+         36 'ename1',
+         72 'eort01',
+        108 'ST',
+        113 'ct',
+        117 'matnr',
+        136 'arktx',
+        189 'qty',
+        207 'net',
+        219 'PlQty',
+        238 'Div'.
+
+
+
+  LOOP AT it_out.
+    WRITE: /1  it_out-vbeln,
+           12  it_out-posnr,
+           20  it_out-auart,
+           26  it_out-ename1,
+           72  it_out-eort01,
+          108  it_out-eregio,
+          113  it_out-eland1,
+          117  it_out-matnr,
+             it_out-arktx,
+             it_out-kwmeng,
+             it_out-netwr,
+             it_out-prodline_qty,
+             it_out-division.
+
+  ENDLOOP.
+
+ENDFORM.                    "mondelez_kraft_report
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  zor_usingEngMaterial
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM zor_usingengmaterial.
+  DATA: tbx LIKE sy-tabix,
+        it_out2  LIKE it_out OCCURS 0 WITH HEADER LINE.
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+
+
+  "it_fnames-file_name = 'PRD_2011_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2012_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2013_0010.txt'.
+  "append it_fnames.
+  "PERFORM get_data.
+
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+  it_year-yr = '2010'.
+  APPEND it_year.
+  "it_year-yr = '2009'.
+  "append it_year.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                   it_year-yr.
+    "delete it_out where prodline_net <> 'PH'.
+    ""delete it_out where auart = 'ZSER'.
+    ""delete it_out where auart = 'L1'.
+    ""delete it_out where auart = 'CR'.
+    ""delete it_out where auart = 'L2'.
+    ""delete it_out where auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE auart <> 'ZOR'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+    DELETE it_out WHERE netwr = 0.
+    "sort it_out by erdat.
+
+    LOOP AT it_out.
+      "   if it_out-arktx cs 'CONV'.
+      it_out2 = it_out.
+      APPEND it_out2.
+      "  endif.
+    ENDLOOP.
+  ENDLOOP.
+  it_out[] = it_out2[].
+
+  CLEAR it_out2.
+  REFRESH it_out2.
+  LOOP AT it_out.
+    "if it_out-matnr cs '2'.
+    "   continue.
+    "endif.
+    "if it_out-matnr cs '8'.
+    "   continue.
+    "endif.
+    IF it_out-matnr+0(6) = 'ACCESS'.
+      "   continue.
+    ENDIF.
+    IF it_out-matnr+0(7) = 'UPGRADE'.
+      "   continue.
+    ENDIF.
+    IF it_out-matnr+0(1) = 'X'.
+      "   continue.
+    ENDIF.
+
+    it_out2 = it_out.
+    APPEND it_out2.
+  ENDLOOP.
+  it_out[] = it_out2[].
+
+
+
+  SORT it_out BY matnr arktx prodline_net prodline_qty division.
+  DELETE ADJACENT DUPLICATES FROM it_out
+                  COMPARING matnr arktx prodline_net
+                            prodline_qty division.
+
+  LOOP AT it_out.
+    WRITE: / it_out-so_item,
+             it_out-matnr,
+             it_out-arktx,
+             it_out-netwr,
+             it_out-kvgr3,          "oip code
+             it_out-kvgr1_txt,      "industry
+             it_out-mvgr5,          "oip overide
+             it_out-division,
+             it_out-ph_txt_1,   "Prod Hierc txt 1
+             it_out-ph_txt_2,   "Prod Hierc txt 2
+             it_out-ph_txt_3,
+             it_out-prodline_net,
+             it_out-prodline_qty,
+             it_out-pm.
+
+  ENDLOOP.
+
+
+
+ENDFORM.                    "zor_usingEngMaterial
+
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  zmto_20milNo_report
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM zmto_20milno_report.
+  DATA: tbx LIKE sy-tabix,
+        it_out2  LIKE it_out OCCURS 0 WITH HEADER LINE.
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+
+
+  "it_fnames-file_name = 'PRD_2011_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2012_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2013_0010.txt'.
+  "append it_fnames.
+  "PERFORM get_data.
+
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  "it_year-yr = '2011'.
+  "append it_year.
+  "it_year-yr = '2010'.
+  "append it_year.
+  "it_year-yr = '2009'.
+  "append it_year.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                   it_year-yr.
+    "delete it_out where prodline_net <> 'PH'.
+    ""delete it_out where auart = 'ZSER'.
+    ""delete it_out where auart = 'L1'.
+    ""delete it_out where auart = 'CR'.
+    ""delete it_out where auart = 'L2'.
+    ""delete it_out where auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE auart <> 'ZMTO'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+    DELETE it_out WHERE netwr = 0.
+    "sort it_out by erdat.
+
+    LOOP AT it_out.
+      "   if it_out-arktx cs 'CONV'.
+      it_out2 = it_out.
+      APPEND it_out2.
+      "  endif.
+    ENDLOOP.
+  ENDLOOP.
+  it_out[] = it_out2[].
+
+  CLEAR it_out2.
+  REFRESH it_out2.
+  LOOP AT it_out.
+    "if it_out-matnr cs '2'.
+    "   continue.
+    "endif.
+    "if it_out-matnr cs '8'.
+    "   continue.
+    "endif.
+    IF it_out-matnr+0(6) = 'ACCESS'.
+      "   continue.
+    ENDIF.
+    IF it_out-matnr+0(7) = 'UPGRADE'.
+      "   continue.
+    ENDIF.
+    IF it_out-matnr+0(1) = 'X'.
+      "   continue.
+    ENDIF.
+
+    it_out2 = it_out.
+    APPEND it_out2.
+  ENDLOOP.
+  it_out[] = it_out2[].
+
+
+
+  SORT it_out BY matnr arktx prodline_net prodline_qty division.
+  DELETE ADJACENT DUPLICATES FROM it_out
+                  COMPARING matnr arktx prodline_net
+                            prodline_qty division.
+
+  LOOP AT it_out.
+    WRITE: / it_out-so_item,
+             it_out-matnr,
+             it_out-arktx,
+             it_out-netwr,
+             it_out-kvgr3,          "oip code
+             it_out-kvgr1_txt,      "industry
+             it_out-mvgr5,          "oip overide
+             it_out-division,
+             it_out-ph_txt_1,   "Prod Hierc txt 1
+             it_out-ph_txt_2,   "Prod Hierc txt 2
+             it_out-ph_txt_3,
+             it_out-prodline_net,
+             it_out-prodline_qty,
+             it_out-prodline_net,
+             it_out-so_item,
+             it_out-division.
+
+
+  ENDLOOP.
+
+
+
+ENDFORM.                    "zmto_20milNo_report
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  conveyor_report
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM conveyor_report.
+  DATA: tbx LIKE sy-tabix,
+        it_out2  LIKE it_out OCCURS 0 WITH HEADER LINE.
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+
+
+  "it_fnames-file_name = 'PRD_2011_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2012_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2013_0010.txt'.
+  "append it_fnames.
+  "PERFORM get_data.
+
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+  it_year-yr = '2010'.
+  APPEND it_year.
+  it_year-yr = '2009'.
+  APPEND it_year.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                   it_year-yr.
+    "delete it_out where prodline_net <> 'PH'.
+    ""delete it_out where auart = 'ZSER'.
+    ""delete it_out where auart = 'L1'.
+    ""delete it_out where auart = 'CR'.
+    ""delete it_out where auart = 'L2'.
+    ""delete it_out where auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE auart <> 'ZMTO'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+    DELETE it_out WHERE netwr = 0.
+    "sort it_out by erdat.
+
+    LOOP AT it_out.
+      IF it_out-arktx CS 'CONV'.
+        it_out2 = it_out.
+        APPEND it_out2.
+      ENDIF.
+    ENDLOOP.
+  ENDLOOP.
+  it_out[] = it_out2[].
+
+  CLEAR it_out2.
+  REFRESH it_out2.
+  LOOP AT it_out.
+    "if it_out-matnr cs '2'.
+    "   continue.
+    "endif.
+    "if it_out-matnr cs '8'.
+    "   continue.
+    "endif.
+    IF it_out-matnr+0(6) = 'ACCESS'.
+      CONTINUE.
+    ENDIF.
+    IF it_out-matnr+0(7) = 'UPGRADE'.
+      CONTINUE.
+    ENDIF.
+    IF it_out-matnr+0(1) = 'X'.
+      CONTINUE.
+    ENDIF.
+
+    it_out2 = it_out.
+    APPEND it_out2.
+  ENDLOOP.
+  it_out[] = it_out2[].
+
+
+
+  SORT it_out BY matnr arktx prodline_net prodline_qty division.
+  DELETE ADJACENT DUPLICATES FROM it_out
+                  COMPARING matnr arktx prodline_net
+                            prodline_qty division.
+
+  LOOP AT it_out.
+    WRITE: / it_out-so_item,
+             it_out-matnr,
+             it_out-arktx,
+             it_out-kvgr3,          "oip code
+             it_out-kvgr1_txt,      "industry
+             it_out-mvgr5,          "oip overide
+             it_out-division,
+             it_out-prodline_net,
+             it_out-prodline_qty,
+             it_out-ename1,
+             it_out-eort01.
+
+  ENDLOOP.
+
+
+
+ENDFORM.                    "MARS_REPORT
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  MARS_REPORT
+*&---------------------------------------------------------------------*
+* Hi George – can we run a sales order listing for all Mars/Mars
+* company jobs (by year) for 2013, 2012, and 2011?  What they want
+* to see is the following:
+*   Mars PO Number
+*   H&C Sales Order Create Date
+*   H&C Sales Order Number
+*   H&C Quote Number
+*   Total Order Value
+*   Ship to Account
+*   Ship to City/State
+*   H&C Shipment Date
+*   YEAR
+*----------------------------------------------------------------------*
+FORM mars_report.
+  DATA tbx LIKE sy-tabix.
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         bstnk       LIKE vbak-bstnk,    "purchase order no
+         erdat       LIKE vbak-erdat,    "create date
+         vbeln       LIKE vbak-vbeln,    "So number
+         vgbel       LIKE vbap-vgbel,    "prec doc / quote
+         netwr       LIKE vbap-netwr,    "value
+         ename1      LIKE kna1-name1,    "End user name
+         ekunnr      LIKE vbak-kunnr,    "End user no
+         eort01      LIKE kna1-ort01,    "end user city
+         eregio      LIKE kna1-regio,    "end user region state
+         vdatu       LIKE vbak-vdatu,    "req dlv date
+         auart       LIKE vbak-auart,    "Sales order type
+         year(4)     TYPE c,
+         END OF it_list.
+
+  "it_fnames-file_name = 'PRD_2011_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2012_0010.txt'.
+  "append it_fnames.
+  "it_fnames-file_name = 'PRD_2013_0010.txt'.
+  "append it_fnames.
+  "PERFORM get_data.
+
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                   it_year-yr.
+    DELETE it_out WHERE ekonzs <> 'MARS'.
+    ""delete it_out where auart = 'ZSER'.
+    ""delete it_out where auart = 'L1'.
+    ""delete it_out where auart = 'CR'.
+    ""delete it_out where auart = 'L2'.
+    ""delete it_out where auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      "if it_out-vbeln = '2013021174'.
+      "   it_out-vbeln = it_out-vbeln.
+      "endif.
+
+      it_list-bstnk   = it_out-bstnk.    "purchase order no
+      "it_list-erdat   = it_out-erdat.           "create date
+      it_list-vbeln    = it_out-vbeln.        "So number
+      it_list-auart    = it_out-auart.        "So number
+      "it_list-vgbel    = it_out-vgbel.    "prec doc / quote
+      it_list-netwr    = it_out-netwr.     "value
+      "it_list-ekunnr   = it_out-kunnr.    "End user no
+      "it_list-eort01   = it_out-ort01.    "end user city
+      "it_list-eregio   = it_out-regio.    "end user region state
+      "it_list-year     = it_out-erdat+0(4).
+      COLLECT it_list INTO it_list.
+    ENDLOOP.
+    DELETE it_list WHERE netwr = 0.
+
+    SORT it_out BY erdat.
+
+    LOOP AT it_list.
+      tbx = sy-tabix.
+      READ TABLE it_out WITH KEY vbeln = it_list-vbeln.
+      IF sy-subrc = 0.
+        it_list-erdat    = it_out-erdat.           "create date
+        "it_list-netwr    = it_out-netwr.     "value
+        it_list-ekunnr   = it_out-ekunnr.    "End user no
+        it_list-ename1   = it_out-ename1.    "End user name
+        it_list-eort01   = it_out-eort01.    "end user city
+        it_list-eregio   = it_out-eregio.    "end user region state
+        it_list-vdatu    = it_out-vdatu.     "req dlv date
+        it_list-year     = it_out-erdat+0(4).
+        MODIFY it_list INDEX tbx.
+      ENDIF.
+    ENDLOOP.
+
+    LOOP AT it_list.
+      tbx = sy-tabix.
+      LOOP AT it_out WHERE vbeln = it_list-vbeln.
+        IF it_out-vgbel+2(1) = '3'.
+          it_list-vgbel    = it_out-vgbel.           "quote
+          MODIFY it_list INDEX tbx TRANSPORTING vgbel.
+          CONTINUE.
+        ENDIF.
+      ENDLOOP.
+
+    ENDLOOP.
+
+
+  ENDLOOP.
+
+
+
+  SORT it_list BY ekunnr vbeln.
+
+  WRITE: /1(20) 'Purchase Order',
+         22(10) 'CreateDt',
+         33(10) 'DlvDate',
+         44(10) 'SoNo',
+         55(10) 'Quote',
+         78(15) 'NetValue',
+         88(10) 'EuNo',
+         99(35) 'EuName',
+        135(35) 'EuCity',
+        171(3)  'Eur',
+        175(4)  'Year',
+        180(4)  'OrdTyp'.
+
+  LOOP AT it_list.
+    WRITE: / it_list-bstnk,    "purchase order no
+             it_list-erdat,    "create date
+             it_list-vdatu,    "create date
+             it_list-vbeln,    "So number
+             it_list-vgbel,    "prec doc / quote
+             it_list-netwr,    "value
+             it_list-ekunnr,    "End user no
+             it_list-ename1,    "End user name1
+             it_list-eort01,    "end user city
+             it_list-eregio,    "end user region state
+             it_list-year,
+             it_list-auart.
+  ENDLOOP.
+
+
+
+ENDFORM.                    "MARS_REPORT
+
+
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  load_fileNames
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM load_filenames.
+  LOOP AT f_names.
+    it_fnames-file_name = f_names-low.
+    APPEND it_fnames.
+  ENDLOOP.
+ENDFORM.                    "load_fileNames
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  get_data
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM get_data.
+  LOOP AT it_fnames.
+    CONCATENATE '\\NT-SERVER\Projectstock\Caterpillar\data\'
+                it_fnames-file_name
+                INTO file_name.
+
+    OPEN DATASET file_name FOR INPUT IN BINARY MODE.
+    IF sy-subrc = 0.
+      DO.
+        READ DATASET file_name INTO it_out.
+        IF sy-subrc <> 0.
+          EXIT.
+        ELSE.
+          APPEND it_out.
+        ENDIF.
+      ENDDO.
+      CLOSE DATASET file_name.
+    ELSE.
+      CONCATENATE 'Error: Open dataset for input: '
+                  file_name INTO str_mssg SEPARATED BY space.
+      MESSAGE str_mssg TYPE 'I'.
+    ENDIF.
+  ENDLOOP.
+
+ENDFORM.                    "get_data
+
+
+*&---------------------------------------------------------------------*
+*&      Form  get_data_from_file
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->SERVER     text
+*      -->YEAR       text
+*----------------------------------------------------------------------*
+FORM get_data_from_file USING server TYPE string
+                              year TYPE string.
+
+
+  DATA:  str TYPE string.
+  CONCATENATE server year INTO str SEPARATED BY space.
+  "'DV2_1999_0010.txt'
+  PERFORM showprogress USING str.
+
+  CONCATENATE '\\NT-SERVER\Projectstock\Caterpillar\data\'
+              server
+              '_'
+              year
+              '_0010.txt'
+              INTO file_name.
+
+  OPEN DATASET file_name FOR INPUT IN BINARY MODE.
+  IF sy-subrc = 0.
+    DO.
+      READ DATASET file_name INTO it_out.
+      IF sy-subrc <> 0.
+        EXIT.
+      ELSE.
+        APPEND it_out.
+      ENDIF.
+    ENDDO.
+    CLOSE DATASET file_name.
+  ELSE.
+    CONCATENATE 'Error: Open dataset for input: '
+                file_name INTO str_mssg SEPARATED BY space.
+    MESSAGE str_mssg TYPE 'I'.
+  ENDIF.
+
+
+ENDFORM.                    "get_data_from_file
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  create_parts_sales_by_plant
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM create_parts_sales_by_plant.
+  DATA tbx LIKE sy-tabix.
+
+  DATA:  BEGIN OF it_custplant OCCURS 1,
+         ename1      LIKE kna1-name1,
+         eort01      LIKE kna1-ort01,
+         qty_ccw     LIKE vbap-kwmeng,   "Qty Ishida Units
+         qty_vffs    LIKE vbap-kwmeng,   "Qty Ishida Units
+         qty_dacs    LIKE vbap-kwmeng,   "Qty Ishida Units
+         netwr       LIKE vbap-netwr,    "ishida Parts value
+         year(4)     TYPE c,
+         END OF it_custplant.
+
+  CLEAR it_out.
+  REFRESH it_out.
+  PERFORM get_data_from_file USING 'DV2' '1999'.
+  LOOP AT it_out.
+    CLEAR it_custplant.
+    it_custplant-ename1 = it_out-ename1.
+    it_custplant-eort01 = it_out-eort01.
+    CASE it_out-prodline_qty.
+      WHEN 'CCW'.
+        it_custplant-qty_ccw = it_out-kwmeng.
+      WHEN 'VFFS'.
+        it_custplant-qty_vffs = it_out-kwmeng.
+      WHEN 'DACS'.
+        it_custplant-qty_dacs = it_out-kwmeng.
+    ENDCASE.
+    IF it_out-division = 'PartsIshida'.
+      "   it_custplant-netwr  = it_out-netwr.
+    ENDIF.
+    it_custplant-year   = '1999'.
+    COLLECT it_custplant INTO it_custplant.
+  ENDLOOP.
+  SORT it_custplant BY netwr DESCENDING."
+
+
+  CLEAR it_out.
+  REFRESH it_out.
+  PERFORM get_data_from_file USING 'DV2' '2000'.
+  LOOP AT it_out.
+    CLEAR it_custplant.
+    it_custplant-ename1 = it_out-ename1.
+    it_custplant-eort01 = it_out-eort01.
+    CASE it_out-prodline_qty.
+      WHEN 'CCW'.
+        it_custplant-qty_ccw = it_out-kwmeng.
+      WHEN 'VFFS'.
+        it_custplant-qty_vffs = it_out-kwmeng.
+      WHEN 'DACS'.
+        it_custplant-qty_dacs = it_out-kwmeng.
+    ENDCASE.
+    IF it_out-division = 'PartsIshida'.
+      "   it_custplant-netwr  = it_out-netwr.
+    ENDIF.
+    it_custplant-year   = '1999'.
+    COLLECT it_custplant INTO it_custplant.
+  ENDLOOP.
+  SORT it_custplant BY netwr DESCENDING.
+
+  CLEAR it_out.
+  REFRESH it_out.
+  PERFORM get_data_from_file USING 'DV2' '2001'.
+  LOOP AT it_out.
+    CLEAR it_custplant.
+    it_custplant-ename1 = it_out-ename1.
+    it_custplant-eort01 = it_out-eort01.
+    CASE it_out-prodline_qty.
+      WHEN 'CCW'.
+        it_custplant-qty_ccw = it_out-kwmeng.
+      WHEN 'VFFS'.
+        it_custplant-qty_vffs = it_out-kwmeng.
+      WHEN 'DACS'.
+        it_custplant-qty_dacs = it_out-kwmeng.
+    ENDCASE.
+    IF it_out-division = 'PartsIshida'.
+      ""   it_custplant-netwr  = it_out-netwr.
+    ENDIF.
+    it_custplant-year   = '1999'.
+    COLLECT it_custplant INTO it_custplant.
+  ENDLOOP.
+  SORT it_custplant BY netwr DESCENDING.
+
+  CLEAR it_out.
+  REFRESH it_out.
+  PERFORM get_data_from_file USING 'DV2' '2002'.
+  LOOP AT it_out.
+    CLEAR it_custplant.
+    it_custplant-ename1 = it_out-ename1.
+    it_custplant-eort01 = it_out-eort01.
+    CASE it_out-prodline_qty.
+      WHEN 'CCW'.
+        it_custplant-qty_ccw = it_out-kwmeng.
+      WHEN 'VFFS'.
+        it_custplant-qty_vffs = it_out-kwmeng.
+      WHEN 'DACS'.
+        it_custplant-qty_dacs = it_out-kwmeng.
+    ENDCASE.
+    IF it_out-division = 'PartsIshida'.
+      ""  it_custplant-netwr  = it_out-netwr.
+    ENDIF.
+    it_custplant-year   = '1999'.
+    COLLECT it_custplant INTO it_custplant.
+  ENDLOOP.
+  SORT it_custplant BY netwr DESCENDING.
+
+
+  CLEAR it_out.
+  REFRESH it_out.
+  PERFORM get_data_from_file USING 'DV2' '2003'.
+  LOOP AT it_out.
+    CLEAR it_custplant.
+    it_custplant-ename1 = it_out-ename1.
+    it_custplant-eort01 = it_out-eort01.
+    CASE it_out-prodline_qty.
+      WHEN 'CCW'.
+        it_custplant-qty_ccw = it_out-kwmeng.
+      WHEN 'VFFS'.
+        it_custplant-qty_vffs = it_out-kwmeng.
+      WHEN 'DACS'.
+        it_custplant-qty_dacs = it_out-kwmeng.
+    ENDCASE.
+    IF it_out-division = 'PartsIshida'.
+      ""   it_custplant-netwr  = it_out-netwr.
+    ENDIF.
+    it_custplant-year   = '1999'.
+    COLLECT it_custplant INTO it_custplant.
+  ENDLOOP.
+  SORT it_custplant BY netwr DESCENDING.
+
+
+
+  CLEAR it_out.
+  REFRESH it_out.
+  PERFORM get_data_from_file USING 'DV2' '2004'.
+  LOOP AT it_out.
+    CLEAR it_custplant.
+    it_custplant-ename1 = it_out-ename1.
+    it_custplant-eort01 = it_out-eort01.
+    CASE it_out-prodline_qty.
+      WHEN 'CCW'.
+        it_custplant-qty_ccw = it_out-kwmeng.
+      WHEN 'VFFS'.
+        it_custplant-qty_vffs = it_out-kwmeng.
+      WHEN 'DACS'.
+        it_custplant-qty_dacs = it_out-kwmeng.
+    ENDCASE.
+    IF it_out-division = 'PartsIshida'.
+      it_custplant-netwr  = it_out-netwr.
+    ENDIF.
+    it_custplant-year   = '1999'.
+    COLLECT it_custplant INTO it_custplant.
+  ENDLOOP.
+  SORT it_custplant BY netwr DESCENDING.
+
+
+  LOOP AT it_custplant.
+
+    WRITE: / it_custplant-ename1,
+             it_custplant-eort01,
+             it_custplant-qty_ccw,
+             it_custplant-qty_vffs,
+             it_custplant-qty_dacs,
+             it_custplant-netwr,
+             it_custplant-year.
+
+
+  ENDLOOP.
+
+
+ENDFORM.                    "create_parts_sales_by_plant
+
+
+*&---------------------------------------------------------------------*
+*&      Form  mars_report2
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM mars_report2.
+  DATA tbx LIKE sy-tabix.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         bstnk       LIKE vbak-bstnk,    "purchase order no
+         erdat       LIKE vbak-erdat,    "create date
+         vbeln       LIKE vbak-vbeln,    "So number
+         vgbel       LIKE vbap-vgbel,    "prec doc / quote
+         netwr       LIKE vbap-netwr,    "value
+         ename1      LIKE kna1-name1,    "End user name
+         ekunnr      LIKE vbak-kunnr,    "End user no
+         eort01      LIKE kna1-ort01,    "end user city
+         eregio      LIKE kna1-regio,    "end user region state
+         vdatu       LIKE vbak-vdatu,    "req dlv date
+         ekonzs      LIKE kna1-konzs,    "customer group
+         year(4)     TYPE c,
+         END OF it_list.
+
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+  it_year-yr = '2010'.
+  APPEND it_year.
+  it_year-yr = '2009'.
+  APPEND it_year.
+
+  ""  it_fnames-file_name = 'PRD_2011_0010.txt'.
+  "" append it_fnames.
+  " it_fnames-file_name = 'PRD_2012_0010.txt'.
+  " append it_fnames.
+  "it_fnames-file_name = 'PRD_2013_0010.txt'.
+  "append it_fnames.
+  "PERFORM get_data.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+    "delete it_out where ekonzs <> 'MARS'.
+    DELETE it_out WHERE auart = 'ZSER'.
+    ""delete it_out where auart = 'L1'.
+    ""delete it_out where auart = 'CR'.
+    ""delete it_out where auart = 'L2'.
+    DELETE it_out WHERE auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+
+    LOOP AT it_out.
+      IF it_out-vbeln = '2013021174'.
+        it_out-vbeln = it_out-vbeln.
+      ENDIF.
+      IF it_out-vbeln = '2013018890'.
+        it_out-vbeln = it_out-vbeln.
+      ENDIF.
+
+      it_list-bstnk   = it_out-bstnk.    "purchase order no
+      "it_list-erdat   = it_out-erdat.           "create date
+      it_list-vbeln    = it_out-vbeln.        "So number
+      "it_list-vgbel    = it_out-vgbel.    "prec doc / quote
+      it_list-netwr    = it_out-netwr.     "value
+      "it_list-ekunnr   = it_out-kunnr.    "End user no
+      "it_list-eort01   = it_out-ort01.    "end user city
+      "it_list-eregio   = it_out-regio.    "end user region state
+      "it_list-year     = it_out-erdat+0(4).
+      COLLECT it_list INTO it_list.
+    ENDLOOP.
+    DELETE it_list WHERE netwr = 0.
+    DELETE it_list WHERE netwr < 30000.
+
+    SORT it_out BY erdat.
+
+    LOOP AT it_list.
+      tbx = sy-tabix.
+      READ TABLE it_out WITH KEY vbeln = it_list-vbeln.
+      IF sy-subrc = 0.
+        it_list-erdat    = it_out-erdat.           "create date
+        "it_list-netwr    = it_out-netwr.     "value
+        it_list-ekunnr   = it_out-ekunnr.    "End user no
+        it_list-ename1   = it_out-ename1.    "End user name
+        it_list-eort01   = it_out-eort01.    "end user city
+        it_list-eregio   = it_out-eregio.    "end user region state
+        it_list-vdatu    = it_out-vdatu.     "req dlv date
+        it_list-year     = it_out-erdat+0(4).
+        IF it_out-ekonzs IS NOT INITIAL.
+          it_list-ekonzs = it_out-ekonzs.
+        ELSE.
+          it_list-ekonzs = it_out-ename1.
+        ENDIF.
+        MODIFY it_list INDEX tbx.
+      ENDIF.
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY ekunnr vbeln.
+
+  WRITE: /1(20) 'Purchase Order',
+         22(10) 'CreateDt',
+         33(10) 'DlvDate',
+         44(10) 'SoNo',
+         55(10) 'Quote',
+         66(15) 'NetValue'.
+
+  LOOP AT it_list.
+    WRITE: / it_list-bstnk,    "purchase order no
+             it_list-erdat,    "create date
+             it_list-vdatu,    "create date
+             it_list-vbeln,    "So number
+             it_list-vgbel,    "prec doc / quote
+             it_list-netwr,    "value
+             it_list-ekunnr,    "End user no
+             it_list-ename1,    "End user name1
+             it_list-eort01,    "end user city
+             it_list-eregio,    "end user region state
+             it_list-year,
+             it_list-ekonzs.
+  ENDLOOP.
+
+
+
+ENDFORM.                    "MARS_REPORT
+
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  poultry_report1
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM poultry_report1.
+  DATA tbx LIKE sy-tabix.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         vbeln          LIKE vbak-vbeln,    "So number
+         erdat          LIKE vbak-erdat,
+         sname1         LIKE kna1-name1, "Sold to Customer
+         ename1         LIKE kna1-name1,    "End User Customer
+         eort01         LIKE kna1-ort01,
+         eregio         LIKE kna1-regio,
+         eland1         LIKE kna1-land1,
+         matnr          LIKE vbap-matnr,    "material
+         arktx          LIKE vbap-arktx,    "description
+         kwmeng         LIKE vbap-kwmeng,   "qty
+         netwr          LIKE vbap-netwr,    "net
+         total_net      LIKE vbap-netwr,
+         se1            LIKE pa0002-nachn,  "Sales Emp 1
+         se2            LIKE pa0002-nachn,  "Sales Emp 2
+         kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+         mvgr1_txt      LIKE tvm1t-bezei,   "material group txt
+         prodline_net(20)  TYPE c,          "PH, CI, etc
+         division(20)    TYPE c,            "Division
+         year(7)     TYPE c,
+         prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+         END OF it_list.
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+
+
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+    "delete it_out where ekonzs <> 'MARS'.
+    DELETE it_out WHERE auart = 'ZSER'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    DELETE it_out WHERE auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE ekonzs = 'FRITO'.
+    DELETE it_out WHERE division <> 'Packaging'.
+    DELETE it_out WHERE prodline_net = 'INSTALL'.
+    DELETE it_out WHERE prodline_net = 'CI'.
+    DELETE it_out WHERE ( sland1 <> 'US' AND sland1 <> 'CA' ).
+    DELETE it_out WHERE kvgr1_txt <> 'Meat/Poultry/Seafood'.
+
+    DELETE it_out WHERE ( mvgr1_txt <> 'Poultry - cooked' AND
+                          mvgr1_txt <> 'Poultry - frozen' AND
+                          mvgr1_txt <> 'Poultry - raw'    AND
+                          mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      CLEAR it_list.
+
+
+      MOVE-CORRESPONDING it_out TO it_list.  " from it_out.
+      it_list-netwr       = it_out-netwr / it_out-kwmeng.
+      it_list-total_net   = it_out-netwr .
+      CONCATENATE 'YR_' it_out-vbeln+0(4) INTO it_list-year.
+
+      IF it_out-prodline_net = space.   "is initial.
+        it_list-prodline_net = 'Packaging'.
+      ENDIF.
+
+      APPEND it_list.
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY vbeln.
+
+  WRITE: /1(20) 'SO',
+         12     'SoldTo',
+         48     'EndUser',
+         84     'City',
+        120     'ST',
+        124     'Material',
+        143     'Description',
+        184     'QTY',
+        204     'NET',
+        226     'TOTAL',
+        248    'SE1',
+        289    'SE2',
+        330    'Industry',
+        351    'Product',
+        392    'PH',
+        413    'Division',
+        434    'YR',
+        442    'PGrp',
+        461    'Country',
+        469    'Created'.
+
+  LOOP AT it_list.
+    WRITE: /
+         it_list-vbeln    ,    "So number
+         it_list-sname1   , "Sold to Customer
+         it_list-ename1   ,    "End User Customer
+         it_list-eort01   ,
+         it_list-eregio   ,
+         it_list-matnr    ,    "material
+         it_list-arktx    ,    "description
+         it_list-kwmeng   ,   "qty
+         it_list-netwr    ,
+         it_list-total_net,
+         it_list-se1      ,  "Sales Emp 1
+         it_list-se2      ,  "Sales Emp 2
+         it_list-kvgr1_txt,   "industry name
+         it_list-mvgr1_txt,   "material group txt
+         it_list-prodline_net,          "PH, CI, etc
+         it_list-division,           "Division
+         it_list-year,
+         it_list-prodline_qty,        "CCW, DACS, etc
+         it_list-eland1,
+      469   it_list-erdat.
+  ENDLOOP.
+
+ENDFORM.                    "poultry_report1
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  pack_sales_by_State
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM pack_sales_by_state.
+  DATA tbx LIKE sy-tabix.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         vbeln       LIKE vbak-vbeln,    "So number
+         erdat       LIKE vbak-erdat,
+         sname1         LIKE kna1-name1, "Sold to Customer
+         "ename1         LIKE kna1-name1,    "End User Customer
+         "eort01         LIKE kna1-ort01,
+         sort01        LIKE kna1-ort01,
+         sregio         LIKE kna1-regio,
+         sland1         LIKE kna1-land1,
+         "matnr          LIKE vbap-matnr,    "material
+         "arktx          LIKE vbap-arktx,    "description
+         "kwmeng         LIKE vbap-kwmeng,   "qty
+         netwr          LIKE vbap-netwr,    "net
+         total_net      LIKE vbap-netwr,
+         "se1            LIKE pa0002-nachn,  "Sales Emp 1
+         "se2            LIKE pa0002-nachn,  "Sales Emp 2
+         "kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+         "mvgr1_txt      LIKE tvm1t-bezei,   "material group txt
+         prodline_net(20)  TYPE c,          "PH, CI, etc
+         division(20)    TYPE c,            "Division
+         year(7)     TYPE c,
+         "prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+         END OF it_list.
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+    "delete it_out where ekonzs <> 'MARS'.
+    DELETE it_out WHERE auart = 'ZSER'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    DELETE it_out WHERE auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    DELETE it_out WHERE ekonzs = 'FRITO'.
+    DELETE it_out WHERE division <> 'Packaging'.
+    DELETE it_out WHERE prodline_net = 'INSTALL'.
+    DELETE it_out WHERE prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+    DELETE it_out WHERE ( sland1 <> 'US' AND sland1 <> 'CA' ).
+
+
+    "delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                      mvgr1_txt <> 'Poultry - raw'    and
+    "                      mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      CLEAR it_list.
+      MOVE-CORRESPONDING it_out TO it_list.  " from it_out.
+      it_list-netwr       = it_list-netwr .
+
+      CONCATENATE 'YR_' it_out-vbeln+0(4) INTO it_list-year.
+
+      IF ( it_out-prodline_net = space      OR
+           it_out-prodline_net = 'INSTALL'  OR
+           it_out-prodline_net = 'CI'       OR
+           it_out-prodline_net = 'TRAY_SEAL' ).   "is initial.
+        it_list-prodline_net = 'Packaging'.
+      ENDIF.
+
+      APPEND it_list.
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY vbeln.
+
+  WRITE: /1(20) 'SO',
+         12     'SoldTo',
+         48     'ST',
+         52     'NetValue',
+         74     'Year',
+         82     'ProdGroup',
+        103     'Division',
+        124     'Country',
+        132     'City',
+        168     'Created'.
+
+  LOOP AT it_list.
+    WRITE: /
+         it_list-vbeln    ,    "So number
+         it_list-sname1   , "Sold to Customer
+         it_list-sregio   ,
+         it_list-netwr    ,
+         it_list-year,
+         it_list-prodline_net,          "PH, CI, etc
+         it_list-division,
+         it_list-sland1,
+      132   it_list-sort01,
+         it_list-erdat.       "city
+
+  ENDLOOP.
+
+ENDFORM.                    "pack_sales_by_State
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  report_stuff_for_map
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM report_stuff_for_map.
+  DATA tbx LIKE sy-tabix.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         vbeln       LIKE vbak-vbeln,    "So number
+         sname1         LIKE kna1-name1, "Sold to Customer
+         ename1         LIKE kna1-name1,    "End User Customer
+         eort01         LIKE kna1-ort01,
+         eregio         LIKE kna1-regio,
+         eland1         LIKE kna1-land1,
+         matnr          LIKE vbap-matnr,    "material
+         arktx          LIKE vbap-arktx,    "description
+         kwmeng         LIKE vbap-kwmeng,   "qty
+         netwr          LIKE vbap-netwr,    "net
+         total_net      LIKE vbap-netwr,
+         se1            LIKE pa0002-nachn,  "Sales Emp 1
+         se2            LIKE pa0002-nachn,  "Sales Emp 2
+         kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+         mvgr1_txt      LIKE tvm1t-bezei,   "material group txt
+         prodline_net(20)  TYPE c,          "PH, CI, etc
+         division(20)    TYPE c,            "Division
+         year(7)     TYPE c,
+         prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+         END OF it_list.
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+
+    DELETE it_out WHERE auart = 'ZSER'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    DELETE it_out WHERE auart = 'ZOR'.
+    "delete it_out where auart = 'ZMTO'.
+
+    DELETE it_out WHERE vbeln < '1999000000'.
+
+    DELETE it_out WHERE ekonzs <> 'FRITO'.
+
+    """delete it_out where division <> 'Packaging'.
+
+    """delete it_out where prodline_net = 'INSTALL'.
+    """delete it_out where prodline_net = 'CI'.
+    DELETE it_out WHERE sland1 <> 'US'.
+
+    """delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                     mvgr1_txt <> 'Poultry - raw'    and
+    "                     mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      CLEAR it_list.
+
+
+      MOVE-CORRESPONDING it_out TO it_list.  " from it_out.
+      it_list-netwr       = it_out-netwr / it_out-kwmeng.
+      it_list-total_net   = it_out-netwr .
+      CONCATENATE 'YR_' it_out-vbeln+0(4) INTO it_list-year.
+
+      " if it_out-prodline_net = space.   "is initial.
+      "    it_list-prodline_net = 'Packaging'.
+      " endif.
+
+      APPEND it_list.
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY vbeln.
+
+  WRITE: /1(20) 'SO',
+         12     'SoldTo',
+         48     'EndUser',
+         84     'City',
+        120     'ST',
+        124     'Material',
+        143     'Description',
+        184     'QTY',
+        204     'NET',
+        226     'TOTAL',
+        248    'SE1',
+        289    'SE2',
+        330    'Industry',
+        351    'Product',
+        392    'PH',
+        413    'Division',
+        434    'YR',
+        442    'PGrp',
+        461    'Country'.
+
+  LOOP AT it_list.
+    WRITE: /
+         it_list-vbeln    ,    "So number
+         it_list-sname1   , "Sold to Customer
+         it_list-ename1   ,    "End User Customer
+         it_list-eort01   ,
+         it_list-eregio   ,
+         it_list-matnr    ,    "material
+         it_list-arktx    ,    "description
+         it_list-kwmeng   ,   "qty
+         it_list-netwr    ,
+         it_list-total_net,
+         it_list-se1      ,  "Sales Emp 1
+         it_list-se2      ,  "Sales Emp 2
+         it_list-kvgr1_txt,   "industry name
+         it_list-mvgr1_txt,   "material group txt
+         it_list-prodline_net,          "PH, CI, etc
+         it_list-division,           "Division
+         it_list-year,
+         it_list-prodline_qty,        "CCW, DACS, etc
+         it_list-eland1.
+  ENDLOOP.
+
+ENDFORM.                    "report_stuff_for_map
+
+
+* Sales by Division / frito group
+
+FORM fritoreportforgl.
+  DATA: tbx LIKE sy-tabix,
+        cust(100) TYPE c.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  it_year-yr = '2017'.
+  APPEND it_year.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+    "delete it_out where ekonzs <> 'MARS'.
+    "delete it_out where auart = 'ZSER'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    "delete it_out where auart = 'ZOR'.
+    "delete it_out where vbeln < '1999000000'.
+    DELETE it_out WHERE ekonzs <> 'FRITO'.
+    "delete it_out where division <> 'Packaging'.
+    "delete it_out where prodline_net = 'INSTALL'.
+    "delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+    "delete it_out where ( sland1 <> 'US' and sland1 <> 'CA' ).
+
+
+    "delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                      mvgr1_txt <> 'Poultry - raw'    and
+    "                      mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+  ENDLOOP.
+
+
+  WRITE: /1     'CustGroup',
+         12     'SalesOrder',
+         23     'EndUserName',
+         59     'SoldToName',
+        107     'NetValue',
+        117     'Group',
+        144     'Week',
+        150     'Material',
+        169     'MaterialDescription',
+        210     'Customer'.
+
+  LOOP AT it_out.
+
+    CLEAR cust.
+    IF it_out-ekunnr <> it_out-skunnr.
+      CONCATENATE it_out-sname1
+                  '('
+                  it_out-ename1
+                  ','
+                  it_out-eort01
+                  ')' INTO cust SEPARATED BY space.
+    ELSE.
+      CONCATENATE it_out-ename1
+                  it_out-eort01
+                  INTO cust  SEPARATED BY space.
+    ENDIF.
+
+    WRITE: /
+         it_out-ekonzs,
+         it_out-vbeln,       "So number
+         it_out-ename1,      "end user name
+         it_out-sname1,      "sold to name
+         it_out-netwr,
+         it_out-division,
+         it_out-week,
+         it_out-matnr,
+         it_out-arktx,
+         cust.
+
+  ENDLOOP.
+
+ENDFORM.                    "FritoReportForGL
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  listAllModelUsedInZOR
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM listallmodelusedinzor.
+  DATA: tbx LIKE sy-tabix,
+        n(1) TYPE c,
+        htype LIKE dd01v-datatype,
+        tst_1(1) type c.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         vbeln       LIKE vbak-vbeln,    "So number
+         sname1         LIKE kna1-name1, "Sold to Customer
+         ename1         LIKE kna1-name1,    "End User Customer
+         eort01         LIKE kna1-ort01,
+         eregio         LIKE kna1-regio,
+         eland1         LIKE kna1-land1,
+         matnr          LIKE vbap-matnr,    "material
+         arktx          LIKE vbap-arktx,    "description
+         kwmeng         LIKE vbap-kwmeng,   "qty
+         netwr          LIKE vbap-netwr,    "net
+         total_net      LIKE vbap-netwr,
+         se1            LIKE pa0002-nachn,  "Sales Emp 1
+         se2            LIKE pa0002-nachn,  "Sales Emp 2
+         kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+         mvgr1_txt      LIKE tvm1t-bezei,   "material group txt
+         prodline_net(20)  TYPE c,          "PH, CI, etc
+         division(20)    TYPE c,            "Division
+         year(7)     TYPE c,
+         prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+         END OF it_list.
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+
+IF 5 = 6.
+  it_year-yr = '2016'.
+  APPEND it_year.
+
+
+    it_year-yr = '2015'.
+    APPEND it_year.
+    it_year-yr = '2014'.
+    APPEND it_year.
+
+
+    it_year-yr = '2013'.
+    APPEND it_year.
+    it_year-yr = '2012'.
+    APPEND it_year.
+    it_year-yr = '2011'.
+    APPEND it_year.
+  ENDIF.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+
+    DELETE it_out WHERE auart <> 'ZOR'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    "delete it_out where auart = 'ZOR'.
+    "delete it_out where auart = 'ZMTO'.
+
+    DELETE it_out WHERE vbeln < '1999000000'.
+
+    "delete it_out where ekonzs <> 'FRITO'.
+    DELETE it_out WHERE division = 'PartsIshida'.
+    """delete it_out where prodline_net = 'INSTALL'.
+    """delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+
+    """delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                     mvgr1_txt <> 'Poultry - raw'    and
+    "                     mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      n = it_out-matnr.
+
+
+      tst_1 = it_out-matnr.    "check for "X-" leading materials
+
+
+      "check numeric
+      CALL FUNCTION 'NUMERIC_CHECK'
+        EXPORTING
+          string_in  = n
+        IMPORTING
+          string_out = n
+          htype      = htype.
+
+      IF htype <> 'NUMC' and tst_1 <> 'X'.
+
+
+        CLEAR it_list.
+
+        MOVE-CORRESPONDING it_out TO it_list.  " from it_out.
+        it_list-netwr       = it_out-netwr / it_out-kwmeng.
+        it_list-total_net   = it_out-netwr .
+        CONCATENATE 'YR_' it_out-vbeln+0(4) INTO it_list-year.
+
+        " if it_out-prodline_net = space.   "is initial.
+        "    it_list-prodline_net = 'Packaging'.
+        " endif.
+
+        APPEND it_list.
+      ENDIF.
+
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY matnr ASCENDING vbeln DESCENDING.
+
+  WRITE: /1(20) 'SO',
+         12     'SoldTo',
+         48     'EndUser',
+         84     'City',
+        120     'ST',
+        124     'Material',
+        143     'Description',
+        184     'QTY',
+        204     'NET',
+        226     'TOTAL',
+        248    'SE1',
+        289    'SE2',
+        330    'Industry',
+        351    'Product',
+        392    'PH',
+        413    'Division',
+        434    'YR',
+        442    'PGrp',
+        461    'Country'.
+
+  LOOP AT it_list.
+    WRITE: /
+         it_list-vbeln    ,    "So number
+         it_list-sname1   , "Sold to Customer
+         it_list-ename1   ,    "End User Customer
+         it_list-eort01   ,
+         it_list-eregio   ,
+         it_list-matnr    ,    "material
+         it_list-arktx    ,    "description
+         it_list-kwmeng   ,   "qty
+         it_list-netwr    ,
+         it_list-total_net,
+         it_list-se1      ,  "Sales Emp 1
+         it_list-se2      ,  "Sales Emp 2
+         it_list-kvgr1_txt,   "industry name
+         it_list-mvgr1_txt,   "material group txt
+         it_list-prodline_net,          "PH, CI, etc
+         it_list-division,           "Division
+         it_list-year,
+         it_list-prodline_qty,        "CCW, DACS, etc
+         it_list-eland1.
+  ENDLOOP.
+
+
+
+ENDFORM.                    "listAllModelUsedInZOR
+
+
+
+FORM countZOR_Lines.
+  DATA: tbx LIKE sy-tabix,
+        n(1) TYPE c,
+        htype LIKE dd01v-datatype,
+        tst_1(1) type c,
+        ctr type i.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         vbeln       LIKE vbak-vbeln,    "So number
+         sname1         LIKE kna1-name1, "Sold to Customer
+         ename1         LIKE kna1-name1,    "End User Customer
+         eort01         LIKE kna1-ort01,
+         eregio         LIKE kna1-regio,
+         eland1         LIKE kna1-land1,
+         matnr          LIKE vbap-matnr,    "material
+         arktx          LIKE vbap-arktx,    "description
+         kwmeng         LIKE vbap-kwmeng,   "qty
+         netwr          LIKE vbap-netwr,    "net
+         total_net      LIKE vbap-netwr,
+         se1            LIKE pa0002-nachn,  "Sales Emp 1
+         se2            LIKE pa0002-nachn,  "Sales Emp 2
+         kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+         mvgr1_txt      LIKE tvm1t-bezei,   "material group txt
+         prodline_net(20)  TYPE c,          "PH, CI, etc
+         division(20)    TYPE c,            "Division
+         year(7)     TYPE c,
+         prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+         END OF it_list.
+
+  it_year-yr = '2016'.
+  APPEND it_year.
+
+  "IF 5 = 6.
+    it_year-yr = '2015'.
+    APPEND it_year.
+    it_year-yr = '2014'.
+    APPEND it_year.
+    it_year-yr = '2013'.
+    APPEND it_year.
+    it_year-yr = '2012'.
+    APPEND it_year.
+    it_year-yr = '2011'.
+    APPEND it_year.
+  "ENDIF.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+
+    DELETE it_out WHERE auart <> 'ZOR'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    "delete it_out where auart = 'ZOR'.
+    "delete it_out where auart = 'ZMTO'.
+
+    DELETE it_out WHERE vbeln < '1999000000'.
+
+    "delete it_out where ekonzs <> 'FRITO'.
+    DELETE it_out WHERE division = 'PartsIshida'.
+    """delete it_out where prodline_net = 'INSTALL'.
+    """delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+
+    """delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                     mvgr1_txt <> 'Poultry - raw'    and
+    "                     mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+       ctr = ctr + 1.
+
+        MOVE-CORRESPONDING it_out TO it_list.  " from it_out.
+        it_list-netwr       = it_out-netwr / it_out-kwmeng.
+        it_list-total_net   = it_out-netwr .
+        CONCATENATE 'YR_' it_out-vbeln+0(4) INTO it_list-year.
+
+        APPEND it_list.
+
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY matnr ASCENDING vbeln DESCENDING.
+
+  write: /1 'ctr =',
+             ctr.
+
+  WRITE: /1(20) 'SO',
+         12     'SoldTo',
+         48     'EndUser',
+         84     'City',
+        120     'ST',
+        124     'Material',
+        143     'Description',
+        184     'QTY',
+        204     'NET',
+        226     'TOTAL',
+        248    'SE1',
+        289    'SE2',
+        330    'Industry',
+        351    'Product',
+        392    'PH',
+        413    'Division',
+        434    'YR',
+        442    'PGrp',
+        461    'Country'.
+
+  LOOP AT it_list.
+    WRITE: /
+         it_list-vbeln    ,    "So number
+         it_list-sname1   , "Sold to Customer
+         it_list-ename1   ,    "End User Customer
+         it_list-eort01   ,
+         it_list-eregio   ,
+         it_list-matnr    ,    "material
+         it_list-arktx    ,    "description
+         it_list-kwmeng   ,   "qty
+         it_list-netwr    ,
+         it_list-total_net,
+         it_list-se1      ,  "Sales Emp 1
+         it_list-se2      ,  "Sales Emp 2
+         it_list-kvgr1_txt,   "industry name
+         it_list-mvgr1_txt,   "material group txt
+         it_list-prodline_net,          "PH, CI, etc
+         it_list-division,           "Division
+         it_list-year,
+         it_list-prodline_qty,        "CCW, DACS, etc
+         it_list-eland1.
+  ENDLOOP.
+
+
+
+ENDFORM.
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  listAllLinesSoldOnZmto
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM listalllinessoldonzmto.
+
+  DATA: tbx LIKE sy-tabix,
+       n(1) TYPE c,
+       htype LIKE dd01v-datatype.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         vbeln       LIKE vbak-vbeln,    "So number
+         sname1         LIKE kna1-name1, "Sold to Customer
+         ename1         LIKE kna1-name1,    "End User Customer
+         eort01         LIKE kna1-ort01,
+         eregio         LIKE kna1-regio,
+         eland1         LIKE kna1-land1,
+         matnr          LIKE vbap-matnr,    "material
+         arktx          LIKE vbap-arktx,    "description
+         kwmeng         LIKE vbap-kwmeng,   "qty
+         netwr          LIKE vbap-netwr,    "net
+         total_net      LIKE vbap-netwr,
+         se1            LIKE pa0002-nachn,  "Sales Emp 1
+         se2            LIKE pa0002-nachn,  "Sales Emp 2
+         kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+         mvgr1_txt      LIKE tvm1t-bezei,   "material group txt
+         prodline_net(20)  TYPE c,          "PH, CI, etc
+         division(20)    TYPE c,            "Division
+         year(7)     TYPE c,
+         prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+         END OF it_list.
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+
+
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+
+    "delete it_out where auart <> 'ZOR'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    "delete it_out where auart = 'ZOR'.
+    DELETE it_out WHERE auart <> 'ZMTO'.
+
+    DELETE it_out WHERE vbeln < '1999000000'.
+
+    "delete it_out where ekonzs <> 'FRITO'.
+    "delete it_out where division = 'PartsIshida'.
+    """delete it_out where prodline_net = 'INSTALL'.
+    """delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+
+    """delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                     mvgr1_txt <> 'Poultry - raw'    and
+    "                     mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+
+      CLEAR it_list.
+
+      MOVE-CORRESPONDING it_out TO it_list.  " from it_out.
+      it_list-netwr       = it_out-netwr / it_out-kwmeng.
+      it_list-total_net   = it_out-netwr .
+      CONCATENATE 'YR_' it_out-vbeln+0(4) INTO it_list-year.
+
+      " if it_out-prodline_net = space.   "is initial.
+      "    it_list-prodline_net = 'Packaging'.
+      " endif.
+
+      APPEND it_list.
+
+
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY vbeln.
+
+  WRITE: /1(20) 'SO',
+         12     'SoldTo',
+         48     'EndUser',
+         84     'City',
+        120     'ST',
+        124     'Material',
+        143     'Description',
+        184     'QTY',
+        204     'NET',
+        226     'TOTAL',
+        248    'SE1',
+        289    'SE2',
+        330    'Industry',
+        351    'Product',
+        392    'PH',
+        413    'Division',
+        434    'YR',
+        442    'PGrp',
+        461    'Country'.
+
+  LOOP AT it_list.
+    WRITE: /
+         it_list-vbeln    ,    "So number
+         it_list-sname1   , "Sold to Customer
+         it_list-ename1   ,    "End User Customer
+         it_list-eort01   ,
+         it_list-eregio   ,
+         it_list-matnr    ,    "material
+         it_list-arktx    ,    "description
+         it_list-kwmeng   ,   "qty
+         it_list-netwr    ,
+         it_list-total_net,
+         it_list-se1      ,  "Sales Emp 1
+         it_list-se2      ,  "Sales Emp 2
+         it_list-kvgr1_txt,   "industry name
+         it_list-mvgr1_txt,   "material group txt
+         it_list-prodline_net,          "PH, CI, etc
+         it_list-division,           "Division
+         it_list-year,
+         it_list-prodline_qty,        "CCW, DACS, etc
+         it_list-eland1.
+  ENDLOOP.
+
+
+
+ENDFORM.                    "listAllLinesSoldOnZmto
+
+
+
+
+FORM find_so_w_text_in_mat_desc.
+
+  DATA: tbx LIKE sy-tabix,
+       n(1) TYPE c,
+       htype LIKE dd01v-datatype.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+
+  it_year-yr = '2017'.
+  APPEND it_year.
+
+  it_year-yr = '2016'.
+  APPEND it_year.
+
+  if 5 = 6.
+  it_year-yr = '2015'.
+  APPEND it_year.
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+ endif.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+
+    "delete it_out where auart <> 'ZOR'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    "delete it_out where auart = 'ZOR'.
+    DELETE it_out WHERE auart <> 'ZMTO'.
+
+    DELETE it_out WHERE vbeln < '1999000000'.
+
+    "delete it_out where ekonzs <> 'FRITO'.
+    "delete it_out where division = 'PartsIshida'.
+    """delete it_out where prodline_net = 'INSTALL'.
+    """delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+
+    """delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                     mvgr1_txt <> 'Poultry - raw'    and
+    "                     mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+
+     if it_out-arktx cs 'PASSIVATION'. " or
+     "   it_out-arktx cs 'SCREEN'.
+
+      " if it_out-prodline_net = space.   "is initial.
+      "    it_list-prodline_net = 'Packaging'.
+      " endif.
+        write:/ it_out-vbeln,
+                it_out-posnr,
+                it_out-matnr,
+                it_out-arktx,
+                it_out-auart.
+
+     endif.
+
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+
+ENDFORM.                    "listAllLinesSoldOnZmto
+
+
+
+
+* Nestle group - all assets
+
+FORM NestleReportAllAssets.
+  DATA: tbx LIKE sy-tabix,
+        cust(100) TYPE c,
+        dt(10) type c,
+        statename(25) type c,
+        countryname(25) type c.
+
+  data: it_out2 like it_out OCCURS 0 WITH HEADER LINE.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+"if 4 = 6.
+  it_year-yr = '1999'.
+  APPEND it_year.
+  it_year-yr = '2000'.
+  APPEND it_year.
+  it_year-yr = '2001'.
+  APPEND it_year.
+  it_year-yr = '2002'.
+  APPEND it_year.
+  it_year-yr = '2003'.
+  APPEND it_year.
+  it_year-yr = '2004'.
+  APPEND it_year.
+  it_year-yr = '2005'.
+  APPEND it_year.
+  it_year-yr = '2006'.
+  APPEND it_year.
+  it_year-yr = '2007'.
+  APPEND it_year.
+  it_year-yr = '2008'.
+  APPEND it_year.
+  it_year-yr = '2009'.
+  APPEND it_year.
+  it_year-yr = '2010'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2015'.
+  APPEND it_year.
+  it_year-yr = '2016'.
+  APPEND it_year.
+  it_year-yr = '2017'.
+  APPEND it_year.
+"endif.
+
+
+  "it_year-yr = '1999'.
+  "APPEND it_year.
+
+
+  LOOP AT it_year.
+
+    PERFORM showprogress USING it_year-yr. " strmssg.
+
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+    "delete it_out where ekonzs <> 'MARS'.
+    delete it_out where auart = 'ZSER'.
+    delete it_out where dismm = 'V1'.
+    delete it_out where dismm = 'P3'.
+    delete it_out where dismm is initial.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    delete it_out where auart = 'ZOR'.
+    delete it_out where vbeln < '1999000000'.
+    DELETE it_out WHERE ekonzs <> 'NESTLE'.
+    "delete it_out where division <> 'Packaging'.
+    "delete it_out where prodline_net = 'INSTALL'.
+    "delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+    "delete it_out where ( sland1 <> 'US' and sland1 <> 'CA' ).
+
+
+    "delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                      mvgr1_txt <> 'Poultry - raw'    and
+    "                      mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+
+    loop at it_out.
+      it_out2 = it_out.
+      append it_out2.
+
+    endloop.
+
+  ENDLOOP.
+
+  it_out[] = it_out2[].
+
+
+  WRITE: /1     'CustGroup',
+         12     'SalesOrder',
+         23     'EndUserName',
+         59     'SoldToName',
+        107     'NetValue',
+        117     'Group',
+        144     'Week',
+        150     'Material',
+        169     'MaterialDescription',
+        210     'DelivDate',
+        221     'Customer',
+        337     'QTY',
+        342     'EndUserName',
+        378     'EnduserCity',
+        413     'Reg',
+        418     'LD',
+        422     'CityName',
+        448     'CountryName'.
+
+
+  LOOP AT it_out.
+
+    PERFORM return_state_name USING it_out-eland1
+                                    it_out-eregio
+                           CHANGING statename.
+
+    PERFORM return_country_name USING  it_out-eland1
+                             CHANGING countryname.
+
+    PERFORM f_converttolocaldt USING it_out-vdatu
+                            CHANGING dt.
+
+
+
+    CLEAR cust.
+    IF it_out-ekunnr <> it_out-skunnr.
+      CONCATENATE it_out-sname1
+                  '('
+                  it_out-ename1
+                  ','
+                  it_out-eort01
+                  ')' INTO cust SEPARATED BY space.
+    ELSE.
+      CONCATENATE it_out-ename1
+                  it_out-eort01
+                  INTO cust  SEPARATED BY space.
+    ENDIF.
+
+    WRITE: /
+         it_out-ekonzs,
+         it_out-vbeln,       "So number
+         it_out-ename1,      "end user name
+         it_out-sname1,      "sold to name
+         it_out-netwr,
+         it_out-division,
+         it_out-week,
+         it_out-matnr,
+         it_out-arktx,
+         dt,
+         cust,
+         it_out-kwmeng,
+         it_out-ename1,
+         it_out-eort01,
+         it_out-eregio,
+         it_out-eland1,
+         statename,
+         countryname.
+
+  ENDLOOP.
+
+ENDFORM.
+
+
+
+
+
+
+
+
+***********************************************************
+
+FORM return_state_name USING ctry LIKE t005u-land1
+                             regio LIKE t005u-bland
+                      CHANGING statename TYPE c.
+
+  IF it_t005u[] IS INITIAL.
+    SELECT * FROM t005u INTO TABLE it_t005u WHERE spras = 'EN'.
+    SORT it_t005u BY land1 bland.
+  ENDIF.
+
+  statename = space.
+
+  READ TABLE it_t005u WITH KEY land1 = ctry
+                               bland = regio BINARY SEARCH.
+  IF sy-subrc = 0.
+    statename = it_t005u-bezei.
+  ENDIF.
+
+ENDFORM.                    "return_state_name
+
+*&---------------------------------------------------------------------*
+*&      Form  return_country_name
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->CTRY         text
+*      -->COUNTRYNAME  text
+*----------------------------------------------------------------------*
+FORM return_country_name USING ctry LIKE t005t-land1
+                      CHANGING countryname TYPE c.
+
+  IF it_t005t[] IS INITIAL.
+    SELECT * FROM t005t INTO TABLE it_t005t WHERE spras = 'EN'.
+    SORT it_t005t BY land1.
+  ENDIF.
+
+  countryname = space.
+
+  READ TABLE it_t005t WITH KEY land1 = ctry BINARY SEARCH.
+  IF sy-subrc = 0.
+    countryname = it_t005t-landx.
+  ENDIF.
+
+ENDFORM.                    "return_country_name
+
+
+
+FORM check_ceia_extract. "consider changing filter
+  DATA: tbx LIKE sy-tabix,
+       n(1) TYPE c,  ctr type i,
+       htype LIKE dd01v-datatype.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+
+  it_year-yr = '2017'.
+  APPEND it_year.
+
+
+if 5 = 6.
+  it_year-yr = '2016'.
+  APPEND it_year.
+
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+
+  it_year-yr = '2014'.
+  APPEND it_year.
+
+
+
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+endif.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+
+    "delete it_out where auart <> 'ZOR'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    "delete it_out where auart = 'ZOR'.
+    DELETE it_out WHERE auart <> 'ZMTO'.
+
+    DELETE it_out WHERE vbeln < '1999000000'.
+
+    "delete it_out where ekonzs <> 'FRITO'.
+    "delete it_out where division = 'PartsIshida'.
+    """delete it_out where prodline_net = 'INSTALL'.
+    """delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+
+    """delete it_out where kvgr1_txt <> 'Meat/Poultry/Seafood'.
+    "delete it_out where ( mvgr1_txt <> 'Poultry - cooked' and
+    "                      mvgr1_txt <> 'Poultry - frozen' and
+    "                     mvgr1_txt <> 'Poultry - raw'    and
+    "                     mvgr1_txt <> 'Poultry - value added' ).
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    skip 2.
+    ctr = 0.
+
+    LOOP AT it_out.
+
+     if ( it_out-arktx cs 'MTL DET,TE' and it_out-arktx cs 'CEIA' ) or
+        ( it_out-arktx cs 'THS' and it_out-arktx cs 'CEIA' ).
+
+      " if it_out-prodline_net = space.   "is initial.
+      "    it_list-prodline_net = 'Packaging'.
+      " endif.
+
+        if it_out-abgru is initial.
+            ctr = ctr + it_out-kwmeng.
+            else.
+            ctr = ctr - it_out-kwmeng.
+        endif.
+
+        write:/ it_year-yr,
+                ctr,
+                it_out-vbeln,
+                it_out-posnr,
+                it_out-matnr,
+                it_out-arktx,
+                it_out-kwmeng,
+                it_out-abgru,
+                it_out-prodline_qty.
+
+     endif.
+
+    ENDLOOP.
+
+  ENDLOOP.
+
+endform.
+
+
+
+FORM orders_by_product.
+  DATA: tbx           LIKE sy-tabix,
+       mvgr1_txt      LIKE tvm1t-bezei.   "product group txt.
+
+  mvgr1_txt = 'French fries'.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+              yr TYPE string,
+        END OF it_year.
+
+  DATA:  BEGIN OF it_list OCCURS 1,
+         vbeln          LIKE vbak-vbeln,    "So number
+         erdat          LIKE vbak-erdat,
+         sname1         LIKE kna1-name1, "Sold to Customer
+         ename1         LIKE kna1-name1,    "End User Customer
+         eort01         LIKE kna1-ort01,
+         eregio         LIKE kna1-regio,
+         eland1         LIKE kna1-land1,
+         matnr          LIKE vbap-matnr,    "material
+         arktx          LIKE vbap-arktx,    "description
+         kwmeng         LIKE vbap-kwmeng,   "qty
+         netwr          LIKE vbap-netwr,    "net
+         total_net      LIKE vbap-netwr,
+         se1            LIKE pa0002-nachn,  "Sales Emp 1
+         se2            LIKE pa0002-nachn,  "Sales Emp 2
+         kvgr1_txt      LIKE tvv1t-bezei,   "industry name
+         mvgr1_txt      LIKE tvm1t-bezei,   "material group txt
+         prodline_net(20)  TYPE c,          "PH, CI, etc
+         division(20)    TYPE c,            "Division
+         year(7)     TYPE c,
+         prodline_qty(18)  TYPE c,        "CCW, DACS, etc
+         END OF it_list.
+
+  it_year-yr = '2017'.
+  APPEND it_year.
+  it_year-yr = '2016'.
+  APPEND it_year.
+  it_year-yr = '2015'.
+  APPEND it_year.
+  it_year-yr = '2014'.
+  APPEND it_year.
+  it_year-yr = '2013'.
+  APPEND it_year.
+  it_year-yr = '2012'.
+  APPEND it_year.
+  it_year-yr = '2011'.
+  APPEND it_year.
+  it_year-yr = '2010'.
+  APPEND it_year.
+  it_year-yr = '2009'.
+  APPEND it_year.
+  it_year-yr = '2008'.
+  APPEND it_year.
+  it_year-yr = '2007'.
+  APPEND it_year.
+  it_year-yr = '2006'.
+  APPEND it_year.
+  it_year-yr = '2005'.
+  APPEND it_year.
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+
+    "delete it_out where ekonzs <> 'MARS'.
+    DELETE it_out WHERE auart = 'ZSER'.
+    DELETE it_out WHERE auart = 'KB'.
+    DELETE it_out WHERE auart = 'KA'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    DELETE it_out WHERE auart = 'ZOR'.
+    DELETE it_out WHERE vbeln < '1999000000'.
+    "DELETE it_out WHERE ekonzs = 'FRITO'.
+    "DELETE it_out WHERE division <> 'Packaging'.
+    "DELETE it_out WHERE prodline_net <> 'PH'.
+    "DELETE it_out WHERE prodline_net = 'CI'.
+    "DELETE it_out WHERE ( sland1 <> 'US' AND sland1 <> 'CA' ).
+    DELETE it_out WHERE kvgr1_txt <> mvgr1_txt.
+
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+
+    LOOP AT it_out.
+      CLEAR it_list.
+
+
+      MOVE-CORRESPONDING it_out TO it_list.  " from it_out.
+      it_list-netwr       = it_out-netwr / it_out-kwmeng.
+      it_list-total_net   = it_out-netwr .
+      CONCATENATE 'YR_' it_out-vbeln+0(4) INTO it_list-year.
+
+      IF it_out-prodline_net = space.   "is initial.
+        it_list-prodline_net = 'Packaging'.
+      ENDIF.
+
+      APPEND it_list.
+    ENDLOOP.
+
+  ENDLOOP.
+
+
+  SORT it_list BY vbeln.
+
+  WRITE: /1(20) 'SO',
+         12     'SoldTo',
+         48     'EndUser',
+         84     'City',
+        120     'ST',
+        124     'Material',
+        143     'Description',
+        184     'QTY',
+        204     'NET',
+        226     'TOTAL',
+        248    'SE1',
+        289    'SE2',
+        330    'Industry',
+        351    'Product',
+        392    'PH',
+        413    'Division',
+        434    'YR',
+        442    'PGrp',
+        461    'Country',
+        469    'Created'.
+
+  LOOP AT it_list.
+    WRITE: /
+         it_list-vbeln    ,    "So number
+         it_list-sname1   , "Sold to Customer
+         it_list-ename1   ,    "End User Customer
+         it_list-eort01   ,
+         it_list-eregio   ,
+         it_list-matnr    ,    "material
+         it_list-arktx    ,    "description
+         it_list-kwmeng   ,   "qty
+         it_list-netwr    ,
+         it_list-total_net,
+         it_list-se1      ,  "Sales Emp 1
+         it_list-se2      ,  "Sales Emp 2
+         it_list-kvgr1_txt,   "industry name
+         it_list-mvgr1_txt,   "material group txt
+         it_list-prodline_net,          "PH, CI, etc
+         it_list-division,           "Division
+         it_list-year,
+         it_list-prodline_qty,        "CCW, DACS, etc
+         it_list-eland1,
+      469   it_list-erdat.
+  ENDLOOP.
+
+ENDFORM.                    "poultry_report1
+
+
+
+form orders_pck_cc.
+    DATA: tbx LIKE sy-tabix,
+          cust(100) TYPE c,
+          countryname(15) type c,
+          statename(15) type c.
+
+  DATA: BEGIN OF it_year OCCURS 1,
+        yr TYPE string,
+        END OF it_year.
+
+  it_year-yr = '2015'.
+  APPEND it_year.
+
+  it_year-yr = '2016'.
+  APPEND it_year.
+
+  it_year-yr = '2017'.
+  APPEND it_year.
+
+
+   WRITE: /1     'CustGroup',
+           12     'SalesOrder',
+           23     'EndUserName',
+           59     'SoldToName',
+           95     'NetValue',
+          117     'Group',
+          138     'Week',
+          150     'Material',
+          169     'MaterialDescription',
+          210     'Customer',
+          311     'City',
+          347     'St',
+          351     'CO',
+          367     'YEAR',
+          372     'STATENAME'.
+
+
+  LOOP AT it_year.
+    CLEAR it_out.
+    REFRESH it_out.
+    PERFORM get_data_from_file USING 'PRD'
+                                     it_year-yr.
+    "delete it_out where ekonzs <> 'MARS'.
+    "delete it_out where auart = 'ZSER'.
+    "delete it_out where auart = 'L1'.
+    "delete it_out where auart = 'CR'.
+    "delete it_out where auart = 'L2'.
+    "delete it_out where auart = 'ZOR'.
+    "delete it_out where vbeln < '1999000000'.
+    "delete it_out where division <> 'Packaging'.
+    "delete it_out where prodline_net = 'INSTALL'.
+    "delete it_out where prodline_net = 'CI'.
+    "delete it_out where sland1 <> 'US'.
+    "delete it_out where ( sland1 <> 'US' and sland1 <> 'CA' ).
+    DELETE it_out WHERE ekonzs = 'FRITO'.
+    DELETE it_out WHERE abgru IS NOT INITIAL.
+    DELETE it_out WHERE vkgrp <> '001'.
+    DELETE it_out WHERE division = 'Snack'.
+    DELETE it_out WHERE division = 'PreparedFoods'.
+    DELETE it_out WHERE eland1 <> 'US'.
+
+  LOOP AT it_out.
+
+    if it_out-division = 'Spray'.
+      it_out-division = 'CC'.
+    endif.
+    if it_out-division = 'Packaging'.
+      "Move stuff out of packaging
+      if it_out-prodline_net = 'PH'.
+        it_out-division = 'CC'.
+      endif.
+
+      if it_out-prodline_qty = 'DACS'.
+        it_out-division = 'INSP'.
+      endif.
+      if it_out-prodline_qty = 'XRAY'.
+        it_out-division = 'INSP'.
+      endif.
+      if it_out-prodline_qty = 'CEIA'.
+        it_out-division = 'INSP'.
+      endif.
+    endif.
+
+    PERFORM return_state_name USING it_out-eland1
+                                    it_out-eregio
+                           CHANGING statename.
+
+
+
+    PERFORM return_country_name USING it_out-eland1
+                      CHANGING countryname.
+
+    CLEAR cust.
+    IF it_out-ekunnr <> it_out-skunnr.
+      CONCATENATE it_out-sname1
+                  '('
+                  it_out-ename1
+                  ','
+                  it_out-eort01
+                  ')' INTO cust SEPARATED BY space.
+    ELSE.
+      CONCATENATE it_out-ename1
+                  it_out-eort01
+                  INTO cust  SEPARATED BY space.
+    ENDIF.
+
+    WRITE: /
+         it_out-ekonzs,
+         it_out-vbeln,       "So number
+         it_out-ename1,      "end user name
+         it_out-sname1,      "sold to name
+         it_out-netwr,
+         it_out-division,
+         it_out-week,
+         it_out-matnr,
+         it_out-arktx,
+         cust,
+         it_out-eort01,
+         it_out-eregio,
+         countryname,
+         it_year-yr,
+         statename.
+
+  ENDLOOP.
+ ENDLOOP.
+ENDFORM.
